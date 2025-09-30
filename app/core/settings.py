@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file="../.env", env_ignore_empty=True, extra="ignore"
@@ -47,10 +48,6 @@ class Settings(BaseSettings):
         if all([self.DB_USER, self.DB_PASSWORD, self.DB_HOST, self.DB_PORT, self.DB_NAME]):
             return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         raise RuntimeError("DATABASE_URL no configurada")
-
-    @property
-    def DATABASE_URL(self):
-        return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
 
 settings = Settings()

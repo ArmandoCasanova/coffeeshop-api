@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - .:/app # Allows changes to be reflected without rebuilding the container in development
-    container_name: coffeapp-fastapi-app
+    container_name: coffeeapp-fastapi-app
     ports:
       - "8000:8000"
     env_file:
@@ -16,7 +16,7 @@ services:
 
   postgres:
     image: postgres:alpine
-    container_name: coffeapp-postgres-container
+    container_name: coffeeapp-postgres-container
     environment:
       POSTGRES_USER: ${DB_USER} # Get the value from the .env file
       POSTGRES_PASSWORD: ${DB_PASSWORD} # Get the value from the .env file
@@ -26,13 +26,13 @@ services:
 
   redis:
     image: "redis:alpine"
-    container_name: coffeapp-redis-container
+    container_name: coffeeapp-redis-container
     ports:
       - "6379:6379" # Redis Port
 
   pgadmin:
     image: "dpage/pgadmin4"
-    container_name: coffeapp_pgadmin4_container
+    container_name: coffeeapp_pgadmin4_container
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
