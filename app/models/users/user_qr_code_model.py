@@ -1,11 +1,12 @@
 from typing import Optional, TYPE_CHECKING
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import Field, Relationship
+from app.core.base_model import BaseCoffeeAppModel
 from datetime import datetime
 
 if TYPE_CHECKING:
     from .user_model import UserModel
 
-class UserQRCodeModel(SQLModel, table=True):
+class UserQRCodeModel(BaseCoffeeAppModel, table=True):
     __tablename__ = "user_qr_codes"
 
     qr_code_id: Optional[int] = Field(default=None, primary_key=True)

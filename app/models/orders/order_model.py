@@ -1,5 +1,6 @@
 from typing import Optional
-from sqlmodel import SQLModel, Field, Column, Enum
+from sqlmodel import Field, Column, Enum
+from app.core.base_model import BaseCoffeeAppModel
 from sqlalchemy.dialects.postgresql import JSONB
 from datetime import datetime
 import enum
@@ -10,7 +11,7 @@ class OrderStatus(str, enum.Enum):
     entregado = "entregado"
     cancelado = "cancelado"
 
-class OrderModel(SQLModel, table=True):
+class OrderModel(BaseCoffeeAppModel, table=True):
     __tablename__ = "orders"
     order_id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.user_id")

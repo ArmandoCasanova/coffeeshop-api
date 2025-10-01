@@ -1,6 +1,8 @@
 from typing import TYPE_CHECKING, Optional, List
-from sqlmodel import SQLModel, Field, Relationship, Column, Enum
+from sqlmodel import Field, Relationship, Column, Enum
+from app.core.base_model import BaseCoffeeAppModel
 from datetime import datetime, date
+from uuid import UUID, uuid4
 import enum
 
 if TYPE_CHECKING:
@@ -13,11 +15,11 @@ class UserRole(str, enum.Enum):
     staff = "staff"
     customer = "customer"
 
-class UserModel(SQLModel, table=True):
+class UserModel(BaseCoffeeAppModel, table=True):
     __tablename__ = "users"
 
-    user_id: Optional[int] = Field(default=None, primary_key=True)
-    rol: UserRole = Field(default=UserRole.customer, sa_column=Column(Enum(UserRole), nullable=False))
+    user_id: UUID = Field(default_factory=uuid4, primary_key=True)
+    role: UserRole = Field(default=UserRole.customer, sa_column=Column(Enum(UserRole), nullable=False))
     name: str
     last_name: str
     birth_date: date
@@ -25,8 +27,6 @@ class UserModel(SQLModel, table=True):
     password: str
     points: float = Field(default=0.0)
     is_verified: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     qr_codes: List["UserQRCodeModel"] = Relationship(back_populates="user")
     verification_codes: List["VerificationCodeModel"] = Relationship(back_populates="user")

@@ -1,10 +1,11 @@
 from typing import Optional, TYPE_CHECKING
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import Field, Relationship
+from app.core.base_model import BaseCoffeeAppModel
 
 if TYPE_CHECKING:
     from .user_model import UserModel
 
-class VerificationCodeModel(SQLModel, table=True):
+class VerificationCodeModel(BaseCoffeeAppModel, table=True):
     __tablename__ = "verification_codes"
 
     verification_code_id: Optional[int] = Field(default=None, primary_key=True)

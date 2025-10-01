@@ -1,9 +1,10 @@
 from typing import Optional
 from sqlmodel import SQLModel, Field, Column
 from sqlalchemy.dialects.postgresql import JSONB
+from app.core.base_model import BaseCoffeeAppModel
 from datetime import datetime
 
-class ProductModel(SQLModel, table=True):
+class ProductModel(BaseCoffeeAppModel, table=True):
     __tablename__ = "products"
     product_id: Optional[int] = Field(default=None, primary_key=True)
     name: str
