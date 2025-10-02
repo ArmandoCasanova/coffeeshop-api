@@ -1,9 +1,11 @@
 from typing import Optional
-from sqlmodel import SQLModel, Field
+from sqlmodel import Field
+from uuid import UUID, uuid4
+from app.core.base_model import BaseCoffeeAppModel
 
-class IngredientModel(SQLModel, table=True):
+class IngredientModel(BaseCoffeeAppModel, table=True):
     __tablename__ = "ingredients"
-    ingredient_id: Optional[int] = Field(default=None, primary_key=True)
+    ingredient_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     name: str
     unit_of_measure: str
     stock_current_level: int

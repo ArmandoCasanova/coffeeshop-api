@@ -1,14 +1,16 @@
 from typing import Optional, TYPE_CHECKING
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import Field, Relationship
+from app.core.base_model import BaseCoffeeAppModel
+from uuid import UUID, uuid4
 
 if TYPE_CHECKING:
     from .user_model import UserModel
 
-class VerificationCodeModel(SQLModel, table=True):
+class VerificationCodeModel(BaseCoffeeAppModel, table=True):
     __tablename__ = "verification_codes"
 
-    verification_code_id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.user_id")
+    verification_code_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
+    user_id: UUID = Field(foreign_key="users.user_id")
     code: str
     is_alive: bool = Field(default=True)
 
