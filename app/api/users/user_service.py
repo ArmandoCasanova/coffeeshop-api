@@ -56,7 +56,7 @@ class UserService:
             user = session.exec(statement).first()
             return user if user else False
         except Exception as e:
-            CoffeeAppHttpResponse.internal_error()
+           raise CoffeeAppHttpResponse.internal_error(str(e))
 
     @staticmethod
     async def verify_user(user_id: UUID, session: Session):
