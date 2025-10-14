@@ -1,4 +1,6 @@
+
 from typing import Optional
+from datetime import datetime
 from sqlmodel import Field, Column
 from sqlalchemy.dialects.postgresql import JSONB
 from uuid import UUID, uuid4
@@ -13,3 +15,4 @@ class ProductModel(BaseCoffeeAppModel, table=True):
     is_available: bool = Field(default=True)
     category_info_json: dict = Field(sa_column=Column(JSONB))
     customization_details_json: dict = Field(sa_column=Column(JSONB))
+    updated_at: Optional[datetime] = Field(default=None, nullable=True)

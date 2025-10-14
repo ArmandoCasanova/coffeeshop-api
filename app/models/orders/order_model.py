@@ -12,6 +12,11 @@ class OrderStatus(str, enum.Enum):
     entregado = "entregado"
     cancelado = "cancelado"
 
+class PaymentType(str, enum.Enum):
+    efectivo = "efectivo"
+    tarjeta = "tarjeta"
+    puntos = "puntos"
+
 class OrderModel(BaseCoffeeAppModel, table=True):
     __tablename__ = "orders"
     order_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
@@ -20,4 +25,5 @@ class OrderModel(BaseCoffeeAppModel, table=True):
     status: OrderStatus = Field(sa_column=Column(Enum(OrderStatus), nullable=False))
     total_amount: float
     points_earned: float
+    payment_type: PaymentType = Field(sa_column=Column(Enum(PaymentType), nullable=False))
     items_summary_json: dict = Field(sa_column=Column(JSONB))
