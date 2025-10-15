@@ -22,7 +22,7 @@ class UserModel(BaseCoffeeAppModel, table=True):
     role: UserRole = Field(default=UserRole.customer, sa_column=Column(Enum(UserRole), nullable=False))
     name: str
     last_name: str
-    birth_date: date
+    birth_date: Optional[date] = Field(default=None)
     email: str = Field(index=True, unique=True)
     password: str
     points: float = Field(default=0.0)

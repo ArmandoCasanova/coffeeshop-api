@@ -7,15 +7,15 @@ from uuid import UUID, uuid4
 import enum
 
 class OrderStatus(str, enum.Enum):
-    pendiente = "pendiente"
-    pagado = "pagado"
-    entregado = "entregado"
-    cancelado = "cancelado"
+    pending = "pending"
+    paid = "paid"
+    delivered = "delivered"
+    cancelled = "cancelled"
 
 class PaymentType(str, enum.Enum):
-    efectivo = "efectivo"
-    tarjeta = "tarjeta"
-    puntos = "puntos"
+    cash = "cash"
+    card = "card"
+    points = "points"
 
 class OrderModel(BaseCoffeeAppModel, table=True):
     __tablename__ = "orders"

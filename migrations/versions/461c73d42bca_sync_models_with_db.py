@@ -26,7 +26,7 @@ def upgrade() -> None:
     op.add_column('customization_options', sa.Column('quantity_consumed', sa.Float(), nullable=False))
     op.create_foreign_key(None, 'customization_options', 'ingredients', ['consumed_ingredient_id'], ['ingredient_id'])
     # Crear el tipo ENUM antes de agregar la columna
-    paymenttype_enum = sa.Enum('efectivo', 'tarjeta', 'puntos', name='paymenttype')
+    paymenttype_enum = sa.Enum('cash', 'card', 'points', name='paymenttype')
     paymenttype_enum.create(op.get_bind(), checkfirst=True)
     op.add_column('orders', sa.Column('payment_type', paymenttype_enum, nullable=False))
     op.alter_column('products', 'updated_at',
