@@ -16,6 +16,8 @@ async def signup(
     try:
         controller = AuthController(session)
         return await controller.signup(data)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -31,5 +33,7 @@ async def signin(
         controller.verify_user_password(user, data.password)
         await controller.is_user_verified(user)
         return await controller.login(user, data.password)
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

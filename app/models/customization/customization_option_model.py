@@ -9,4 +9,7 @@ class CustomizationOptionModel(BaseCoffeeAppModel, table=True):
     group_id: UUID = Field(foreign_key="customization_groups.group_id")
     name: str
     extra_cost: float
+    is_size_option: bool = Field(default=False)
+    consumed_ingredient_id: UUID = Field(foreign_key="ingredients.ingredient_id", nullable=True)
+    quantity_consumed: float = Field(default=0.0)
     details: str

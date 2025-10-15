@@ -90,5 +90,7 @@ class AuthController:
                 refresh_token=refresh_token,
                 is_verified=user.is_verified
             )
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))

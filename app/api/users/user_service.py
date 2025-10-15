@@ -18,9 +18,7 @@ class UserService:
     ) -> UserModel:
         try:
             hashed_password = get_password_hash(user_data.password)
-
             user_dump = user_data.model_dump()
-
             new_user = UserModel(
                 role=role,
                 name=user_dump["name"],
@@ -31,14 +29,14 @@ class UserService:
                 points=user_dump.get("points", 0.0),
                 is_verified=user_dump.get("is_verified", False)
             )
-
             session.add(new_user)
             session.commit()
             session.refresh(new_user)
-
             return new_user
-        except Exception as e:
-            raise e
+        except HTTPException:
+            raise
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
 
     @staticmethod
     async def get_user_by_id(user_id: UUID, session: Session) -> UserModel:
@@ -46,6 +44,8 @@ class UserService:
             statement = select(UserModel).where(UserModel.user_id == user_id)
             user = session.exec(statement).first()
             return user
+        except HTTPException:
+            raise
         except Exception:
             CoffeeAppHttpResponse.internal_error()
 
@@ -55,8 +55,10 @@ class UserService:
             statement = select(UserModel).where(UserModel.email == email)
             user = session.exec(statement).first()
             return user if user else False
-        except Exception as e:
-           raise CoffeeAppHttpResponse.internal_error(str(e))
+        except HTTPException:
+            raise
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
 
     @staticmethod
     async def verify_user(user_id: UUID, session: Session):
@@ -68,6 +70,8 @@ class UserService:
                 user.updated_at = datetime.now(timezone.utc)
                 session.add(user)
                 session.commit()
+        except HTTPException:
+            raise
         except Exception:
             CoffeeAppHttpResponse.internal_error()
 
@@ -82,5 +86,7 @@ class UserService:
                 user.updated_at = datetime.now(timezone.utc)
                 session.add(user)
                 session.commit()
+        except HTTPException:
+            raise
         except Exception:
             CoffeeAppHttpResponse.internal_error()
