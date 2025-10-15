@@ -14,12 +14,13 @@ class ProductService:
         try:
             product_dict = product_data.model_dump()
             new_product = ProductModel(**product_dict)
-            
             session.add(new_product)
             session.commit()
             session.refresh(new_product)
-            
             return new_product
+        except HTTPException:
+            session.rollback()
+            raise
         except Exception as e:
             session.rollback()
             raise HTTPException(status_code=500, detail=f"Error creating product: {str(e)}")
@@ -31,6 +32,8 @@ class ProductService:
             statement = select(ProductModel).where(ProductModel.product_id == product_id)
             product = session.exec(statement).first()
             return product
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching product: {str(e)}")
 
@@ -45,23 +48,20 @@ class ProductService:
         try:
             # Base query
             query = select(ProductModel)
-            
             # Filter by availability if specified
             if is_available is not None:
                 query = query.where(ProductModel.is_available == is_available)
-            
             # Count total
             count_query = select(func.count(ProductModel.product_id))
             if is_available is not None:
                 count_query = count_query.where(ProductModel.is_available == is_available)
-            
             total = session.exec(count_query).one()
-            
             # Get paginated results
             query = query.offset(skip).limit(limit).order_by(ProductModel.name)
             products = session.exec(query).all()
-            
             return products, total
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching products: {str(e)}")
 
@@ -76,21 +76,20 @@ class ProductService:
             # Get existing product
             statement = select(ProductModel).where(ProductModel.product_id == product_id)
             product = session.exec(statement).first()
-            
             if not product:
                 return None
-            
             # Update fields
             update_data = product_data.model_dump(exclude_unset=True)
             for field, value in update_data.items():
                 setattr(product, field, value)
-            
             # updated_at se actualiza automáticamente por BaseCoffeeAppModel
             session.add(product)
             session.commit()
             session.refresh(product)
-            
             return product
+        except HTTPException:
+            session.rollback()
+            raise
         except Exception as e:
             session.rollback()
             raise HTTPException(status_code=500, detail=f"Error updating product: {str(e)}")
@@ -101,14 +100,14 @@ class ProductService:
         try:
             statement = select(ProductModel).where(ProductModel.product_id == product_id)
             product = session.exec(statement).first()
-            
             if not product:
                 return False
-            
             session.delete(product)
             session.commit()
-            
             return True
+        except HTTPException:
+            session.rollback()
+            raise
         except Exception as e:
             session.rollback()
             raise HTTPException(status_code=500, detail=f"Error deleting product: {str(e)}")
@@ -125,17 +124,16 @@ class ProductService:
             # Search query (case insensitive)
             search_pattern = f"%{name}%"
             query = select(ProductModel).where(ProductModel.name.ilike(search_pattern))
-            
             # Count total
             count_query = select(func.count(ProductModel.product_id)).where(
                 ProductModel.name.ilike(search_pattern)
             )
             total = session.exec(count_query).one()
-            
             # Get paginated results
             query = query.offset(skip).limit(limit).order_by(ProductModel.name)
             products = session.exec(query).all()
-            
             return products, total
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error searching products: {str(e)}")
