@@ -8,6 +8,8 @@ from app.models.users.user_model import UserModel
 from app.api.users.user_service import UserService
 from app.api.auth.auth_schema import SignupSchema, AuthResponseSchema
 from app.utils.security import get_user_token, verify_password
+from app.core.http_response import CoffeeAppHttpResponse
+from app.constants.response_codes import CoffeeAppResponseCodes
 
 class AuthController:
     def __init__(self, session: Session):
@@ -18,9 +20,10 @@ class AuthController:
         
             existing_user = await UserService.get_user_by_email(data.email, self.session)
             if existing_user:
-                raise HTTPException(
-                    status_code=400, 
-                    detail="User with this email already exists"
+                CoffeeAppHttpResponse.bad_request(
+                    data=None,
+                    error_id=CoffeeAppResponseCodes.EXISTING_EMAIL.code,
+                    message=CoffeeAppResponseCodes.EXISTING_EMAIL.detail
                 )
             
             user = await UserService.create_user(
