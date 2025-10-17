@@ -143,12 +143,12 @@ class CoffeeAppHttpResponse(Generic[T]):
         )
 
     @staticmethod
-    def bad_request(data: T, error_id: Optional[str] = None) -> HTTPException:
+    def bad_request(data: T, error_id: Optional[str] = None, message: Optional[str] = None) -> HTTPException:
         raise HTTPException(
             status_code=HttpStatus.BAD_REQUEST,
             detail={
                 "status": HttpStatus.BAD_REQUEST,
-                "statusMessage": HttpResponseMessages.BAD_REQUEST,
+                "statusMessage": message or HttpResponseMessages.BAD_REQUEST,
                 "error": {
                     "code": error_id or HttpStatus.BAD_REQUEST,
                     "data": data,
