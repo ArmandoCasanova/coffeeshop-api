@@ -68,7 +68,7 @@ def upgrade() -> None:
     sa.Column('order_id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('order_date', sa.DateTime(), nullable=False),
-    sa.Column('status', sa.Enum('pendiente', 'pagado', 'entregado', 'cancelado', name='orderstatus'), nullable=False),
+    sa.Column('status', sa.Enum('pending', 'paid', 'delivered', 'cancelled', name='orderstatus'), nullable=False),
     sa.Column('total_amount', sa.Float(), nullable=False),
     sa.Column('points_earned', sa.Float(), nullable=False),
     sa.Column('items_summary_json', postgresql.JSONB(astext_type=sa.Text()), nullable=True),

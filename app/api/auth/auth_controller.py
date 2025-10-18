@@ -8,6 +8,8 @@ from app.models.users.user_model import UserModel
 from app.api.users.user_service import UserService
 from app.api.auth.auth_schema import SignupSchema, AuthResponseSchema
 from app.utils.security import get_user_token, verify_password
+from app.core.http_response import CoffeeAppHttpResponse
+from app.constants.response_codes import CoffeeAppResponseCodes
 
 
 class AuthController:
@@ -16,21 +18,21 @@ class AuthController:
 
     async def signup(self, data: SignupSchema) -> AuthResponseSchema:
         try:
-            # Verificar si el usuario ya existe
+
             existing_user = await UserService.get_user_by_email(
                 data.email, self.session
             )
             if existing_user:
-                raise HTTPException(
-                    status_code=400, detail="User with this email already exists"
+                CoffeeAppHttpResponse.bad_request(
+                    data=None,
+                    error_id=CoffeeAppResponseCodes.EXISTING_EMAIL.code,
+                    message=CoffeeAppResponseCodes.EXISTING_EMAIL.detail,
                 )
 
-            # Crear nuevo usuario - user_id se genera automáticamente
             user = await UserService.create_user(
                 user_data=data, role=UserRoles.CUSTOMER.value, session=self.session
             )
 
-            # Generar tokens
             access_token = get_user_token(user, is_refresh=False)
             refresh_token = get_user_token(user, is_refresh=True)
 
@@ -44,10 +46,8 @@ class AuthController:
                 refresh_token=refresh_token,
                 is_verified=user.is_verified,
             )
-        except HTTPException:
-            raise
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+        except HTTPException as e:
+            raise e
 
     async def get_current_user_from_login(self, email: str) -> UserModel:
         try:
@@ -89,5 +89,7 @@ class AuthController:
                 refresh_token=refresh_token,
                 is_verified=user.is_verified,
             )
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))

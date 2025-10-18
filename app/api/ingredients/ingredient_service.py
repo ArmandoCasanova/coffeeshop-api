@@ -18,12 +18,13 @@ class IngredientService:
         try:
             ingredient_dict = ingredient_data.model_dump()
             new_ingredient = IngredientModel(**ingredient_dict)
-            
             session.add(new_ingredient)
             session.commit()
             session.refresh(new_ingredient)
-            
             return new_ingredient
+        except HTTPException:
+            session.rollback()
+            raise
         except Exception as e:
             session.rollback()
             raise HTTPException(status_code=500, detail=f"Error creating ingredient: {str(e)}")
@@ -35,6 +36,8 @@ class IngredientService:
             statement = select(IngredientModel).where(IngredientModel.ingredient_id == ingredient_id)
             ingredient = session.exec(statement).first()
             return ingredient
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching ingredient: {str(e)}")
 
@@ -49,12 +52,12 @@ class IngredientService:
             # Count total
             count_query = select(func.count(IngredientModel.ingredient_id))
             total = session.exec(count_query).one()
-            
             # Get paginated results
             query = select(IngredientModel).offset(skip).limit(limit).order_by(IngredientModel.name)
             ingredients = session.exec(query).all()
-            
             return ingredients, total
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching ingredients: {str(e)}")
 
@@ -69,21 +72,20 @@ class IngredientService:
             # Get existing ingredient
             statement = select(IngredientModel).where(IngredientModel.ingredient_id == ingredient_id)
             ingredient = session.exec(statement).first()
-            
             if not ingredient:
                 return None
-            
             # Update fields
             update_data = ingredient_data.model_dump(exclude_unset=True)
             for field, value in update_data.items():
                 setattr(ingredient, field, value)
-            
             # updated_at se actualiza automáticamente por BaseCoffeeAppModel
             session.add(ingredient)
             session.commit()
             session.refresh(ingredient)
-            
             return ingredient
+        except HTTPException:
+            session.rollback()
+            raise
         except Exception as e:
             session.rollback()
             raise HTTPException(status_code=500, detail=f"Error updating ingredient: {str(e)}")
@@ -94,14 +96,14 @@ class IngredientService:
         try:
             statement = select(IngredientModel).where(IngredientModel.ingredient_id == ingredient_id)
             ingredient = session.exec(statement).first()
-            
             if not ingredient:
                 return False
-            
             session.delete(ingredient)
             session.commit()
-            
             return True
+        except HTTPException:
+            session.rollback()
+            raise
         except Exception as e:
             session.rollback()
             raise HTTPException(status_code=500, detail=f"Error deleting ingredient: {str(e)}")
@@ -113,9 +115,10 @@ class IngredientService:
             statement = select(IngredientModel).where(
                 IngredientModel.stock_current_level < IngredientModel.stock_optimal_level
             ).order_by(IngredientModel.stock_current_level)
-            
             ingredients = session.exec(statement).all()
             return ingredients
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching low stock ingredients: {str(e)}")
 

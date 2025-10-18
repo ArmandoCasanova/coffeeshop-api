@@ -15,27 +15,22 @@ async def signup(data: SignupSchema, session: Session = Depends(get_db)):
     try:
         controller = AuthController(session)
         return await controller.signup(data)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/signin")
-async def login(session: SessionDep, form_data: LoginFormDataDep):
+@router.post("/signin", response_model=AuthResponseSchema)
+async def signin(data: LoginSchema, session: Session = Depends(get_db)):
+    """Iniciar sesión"""
     try:
-        email = form_data.username
-        password = form_data.password
-        auth_controller = AuthController(session)
-
-        current_user = await auth_controller.get_current_user_from_login(email=email)
-
-        auth_controller.verify_user_password(user=current_user, password=password)
-
-        await auth_controller.is_user_verified(user=current_user)
-
-        return await auth_controller.login(user=current_user, password=password)
-
+        controller = AuthController(session)
+        user = await controller.get_current_user_from_login(data.email)
+        controller.verify_user_password(user, data.password)
+        await controller.is_user_verified(user)
+        return await controller.login(user, data.password)
     except HTTPException as e:
         raise e
-
     except Exception as e:
         raise e
