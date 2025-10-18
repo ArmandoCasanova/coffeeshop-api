@@ -9,6 +9,7 @@ from app.api.users.user_service import UserService
 from app.api.auth.auth_schema import SignupSchema, AuthResponseSchema
 from app.utils.security import get_user_token, verify_password
 
+
 class AuthController:
     def __init__(self, session: Session):
         self.session = session
@@ -16,24 +17,23 @@ class AuthController:
     async def signup(self, data: SignupSchema) -> AuthResponseSchema:
         try:
             # Verificar si el usuario ya existe
-            existing_user = await UserService.get_user_by_email(data.email, self.session)
+            existing_user = await UserService.get_user_by_email(
+                data.email, self.session
+            )
             if existing_user:
                 raise HTTPException(
-                    status_code=400, 
-                    detail="User with this email already exists"
+                    status_code=400, detail="User with this email already exists"
                 )
-            
+
             # Crear nuevo usuario - user_id se genera automáticamente
             user = await UserService.create_user(
-                user_data=data,
-                role=UserRoles.CUSTOMER.value,
-                session=self.session
+                user_data=data, role=UserRoles.CUSTOMER.value, session=self.session
             )
-            
+
             # Generar tokens
             access_token = get_user_token(user, is_refresh=False)
             refresh_token = get_user_token(user, is_refresh=True)
-            
+
             return AuthResponseSchema(
                 user_id=user.user_id,
                 email=user.email,
@@ -42,7 +42,7 @@ class AuthController:
                 role=user.role,
                 access_token=access_token,
                 refresh_token=refresh_token,
-                is_verified=user.is_verified
+                is_verified=user.is_verified,
             )
         except HTTPException:
             raise
@@ -72,16 +72,13 @@ class AuthController:
 
     async def is_user_verified(self, user: UserModel):
         if not user.is_verified:
-            raise HTTPException(
-                status_code=403, 
-                detail="User is not verified"
-            )
+            raise HTTPException(status_code=403, detail="User is not verified")
 
     async def login(self, user: UserModel, password: str) -> AuthResponseSchema:
         try:
             access_token = get_user_token(user, is_refresh=False)
             refresh_token = get_user_token(user, is_refresh=True)
-            
+
             return AuthResponseSchema(
                 user_id=user.user_id,
                 email=user.email,
@@ -90,7 +87,7 @@ class AuthController:
                 role=user.role,
                 access_token=access_token,
                 refresh_token=refresh_token,
-                is_verified=user.is_verified
+                is_verified=user.is_verified,
             )
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
