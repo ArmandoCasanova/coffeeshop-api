@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file="../.env", env_ignore_empty=True, extra="ignore"
@@ -35,19 +34,9 @@ class Settings(BaseSettings):
     SMTP_USERNAME: str
     SMTP_PASSWORD: str
 
-    SUPABASE_JWT_SECRET: str | None = None
-    SUPABASE_URL: str | None = None
-    SUPABASE_ANON_KEY: str | None = None
-    SUPABASE_SERVICE_ROLE_KEY: str | None = None
-    DATABASE_URL: str
-
     @property
-    def DATABASE_URL_EFFECTIVE(self):
-        if self.DATABASE_URL:
-            return self.DATABASE_URL
-        if all([self.DB_USER, self.DB_PASSWORD, self.DB_HOST, self.DB_PORT, self.DB_NAME]):
-            return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
-        raise RuntimeError("DATABASE_URL no configurada")
+    def DATABASE_URL(self):
+        return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
 
 settings = Settings()
