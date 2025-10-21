@@ -93,12 +93,12 @@ class CoffeeAppHttpResponse(Generic[T]):
     @staticmethod
     def not_found(
         data: Optional[T] = None, error_id: Optional[str] = None
-    ) -> HTTPException:
+    , message: Optional[str] = None) -> HTTPException:
         raise HTTPException(
             status_code=HttpStatus.NOT_FOUND,
             detail={
                 "status": HttpStatus.NOT_FOUND,
-                "statusMessage": HttpResponseMessages.NOT_FOUND,
+                "statusMessage": message or HttpResponseMessages.NOT_FOUND,
                 "error": {
                     "code": error_id or HttpStatus.NOT_FOUND,
                     "data": data,
@@ -108,6 +108,7 @@ class CoffeeAppHttpResponse(Generic[T]):
 
     @staticmethod
     def unauthorized() -> HTTPException:
+        # Default unauthorized without structured error code
         raise HTTPException(
             status_code=HttpStatus.UNAUTHORIZED,
             detail={
@@ -117,14 +118,29 @@ class CoffeeAppHttpResponse(Generic[T]):
         )
 
     @staticmethod
+    def unauthorized_with_code(error_id: Optional[str] = None, message: Optional[str] = None) -> HTTPException:
+        """Raise 401 with structured detail and optional error code."""
+        raise HTTPException(
+            status_code=HttpStatus.UNAUTHORIZED,
+            detail={
+                "status": HttpStatus.UNAUTHORIZED,
+                "statusMessage": message or HttpResponseMessages.UNAUTHORIZED,
+                "error": {
+                    "code": error_id or HttpStatus.UNAUTHORIZED,
+                    "data": None,
+                },
+            },
+        )
+
+    @staticmethod
     def forbidden(
         data: Optional[T] = None, error_id: Optional[str] = None
-    ) -> HTTPException:
+    , message: Optional[str] = None) -> HTTPException:
         raise HTTPException(
             status_code=HttpStatus.FORBIDDEN,
             detail={
                 "status": HttpStatus.FORBIDDEN,
-                "statusMessage": HttpResponseMessages.FORBIDDEN,
+                "statusMessage": message or HttpResponseMessages.FORBIDDEN,
                 "error": {
                     "code": error_id or HttpStatus.FORBIDDEN,
                     "data": data,

@@ -55,7 +55,11 @@ class AuthController:
                 email=email, session=self.session
             )
             if user is False:
-                raise HTTPException(status_code=404, detail="User not found")
+                CoffeeAppHttpResponse.not_found(
+                    data=None,
+                    error_id=CoffeeAppResponseCodes.UNEXISTING_USER.code,
+                    message=CoffeeAppResponseCodes.UNEXISTING_USER.detail,
+                )
             return user
         except HTTPException:
             raise
@@ -67,12 +71,19 @@ class AuthController:
             plain_password=password, hashed_password=user.password
         )
         if not is_valid_password:
-            raise HTTPException(status_code=401, detail="Invalid credentials")
+            CoffeeAppHttpResponse.unauthorized_with_code(
+                error_id=CoffeeAppResponseCodes.INVALID_PASSWORD.code,
+                message=CoffeeAppResponseCodes.INVALID_PASSWORD.detail,
+            )
         return True
 
     async def is_user_verified(self, user: UserModel):
         if not user.is_verified:
-            raise HTTPException(status_code=403, detail="User is not verified")
+            CoffeeAppHttpResponse.forbidden(
+                data=None,
+                error_id=CoffeeAppResponseCodes.UNVERIFIED_USER.code,
+                message=CoffeeAppResponseCodes.UNVERIFIED_USER.detail,
+            )
 
     async def login(self, user: UserModel, password: str) -> AuthResponseSchema:
         try:
