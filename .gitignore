@@ -1,0 +1,48 @@
+# Node
+node_modules/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Expo
+.expo/
+.expo-shared/
+
+# macOS
+.DS_Store
+
+# VSCode
+.vscode/
+
+# Environment
+.env
+
+# Build
+/dist/
+/build/
+
+# Others
+*.local
+*.lock
+package-lock.json
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.egg-info/
+venv/
+env/
+build/
+dist/
+
+# Ignore API dependencies if you add an api folder
+api/node_modules/
+*.pyc
+coffeeapp-api/venv/
+coffeeapp-api/**/*.pyc
+coffeeapp-api/**/__pycache__/
