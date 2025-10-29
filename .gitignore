@@ -46,3 +46,6 @@ api/node_modules/
 coffeeapp-api/venv/
 coffeeapp-api/**/*.pyc
 coffeeapp-api/**/__pycache__/
+*.pyc
+coffeeapp-api/**/*.pyc
+coffeeapp-api/**/__pycache__/
