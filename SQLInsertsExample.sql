@@ -23,12 +23,12 @@ INSERT INTO ingredients (ingredient_id, name, unit_of_measure, stock_current_lev
 ('20000000-0000-0000-0000-000000000011', 'Leche Deslactosada', 'ml', 5000, 3000, '2024-01-01 10:00:00+00', '2024-01-01 10:00:00+00');
 
 -- 3. GRUPOS DE PERSONALIZACIÓN
-INSERT INTO customization_groups (group_id, name, created_at, updated_at) VALUES
-('30000000-0000-0000-0000-000000000001', 'Tamaño', '2024-01-01 10:00:00+00', '2024-01-01 10:00:00+00'),
-('30000000-0000-0000-0000-000000000002', 'Tipo de Leche', '2024-01-01 10:00:00+00', '2024-01-01 10:00:00+00'),
-('30000000-0000-0000-0000-000000000003', 'Extra', '2024-01-01 10:00:00+00', '2024-01-01 10:00:00+00'),
-('30000000-0000-0000-0000-000000000004', 'Tipo de Café', '2024-01-01 10:00:00+00', '2024-01-01 10:00:00+00'),
-('30000000-0000-0000-0000-000000000005', 'Endulzante', '2024-01-01 10:00:00+00', '2024-01-01 10:00:00+00');
+INSERT INTO customization_groups (group_id, system_name, display_name, created_at, updated_at) VALUES
+('30000000-0000-0000-0000-000000000001', 'Tamaño Frappe', 'Tamaño', '2024-01-01 10:00:00+00', '2024-01-01 10:00:00+00'),
+('30000000-0000-0000-0000-000000000002', 'Tipo de Leche Frappe', 'Tipo de Leche', '2024-01-01 10:00:00+00', '2024-01-01 10:00:00+00'),
+('30000000-0000-0000-0000-000000000003', 'Extra Frappe', 'Extra', '2024-01-01 10:00:00+00', '2024-01-01 10:00:00+00'),
+('30000000-0000-0000-0000-000000000004', 'Tipo de Café Frappe', 'Tipo de Café', '2024-01-01 10:00:00+00', '2024-01-01 10:00:00+00'),
+('30000000-0000-0000-0000-000000000005', 'Endulzante Frappe', 'Endulzante', '2024-01-01 10:00:00+00', '2024-01-01 10:00:00+00');
 
 -- 4. OPCIONES DE PERSONALIZACIÓN
 INSERT INTO customization_options (option_id, group_id, name, extra_cost, is_size_option, consumed_ingredient_id, quantity_consumed, details, created_at, updated_at) VALUES

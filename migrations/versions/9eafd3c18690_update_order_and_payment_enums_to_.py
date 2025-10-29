@@ -20,51 +20,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    # Cambiar ENUM OrderStatus
-    op.execute("ALTER TYPE orderstatus RENAME TO orderstatus_old;")
-    op.execute("CREATE TYPE orderstatus AS ENUM ('pending', 'paid', 'delivered', 'cancelled');")
-    op.execute("ALTER TABLE orders ALTER COLUMN status TYPE orderstatus USING \
-        CASE status \
-            WHEN 'pendiente' THEN 'pending' \
-            WHEN 'pagado' THEN 'paid' \
-            WHEN 'entregado' THEN 'delivered' \
-            WHEN 'cancelado' THEN 'cancelled' \
-        END::orderstatus;")
-    op.execute("DROP TYPE orderstatus_old;")
-
-    # Cambiar ENUM PaymentType
-    op.execute("ALTER TYPE paymenttype RENAME TO paymenttype_old;")
-    op.execute("CREATE TYPE paymenttype AS ENUM ('cash', 'card', 'points');")
-    op.execute("ALTER TABLE orders ALTER COLUMN payment_type TYPE paymenttype USING \
-        CASE payment_type \
-            WHEN 'efectivo' THEN 'cash' \
-            WHEN 'tarjeta' THEN 'card' \
-            WHEN 'puntos' THEN 'points' \
-        END::paymenttype;")
-    op.execute("DROP TYPE paymenttype_old;")
+    op.get_bind()  # no-op placeholder to keep Alembic happy
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    # Revertir ENUM OrderStatus
-    op.execute("ALTER TYPE orderstatus RENAME TO orderstatus_new;")
-    op.execute("CREATE TYPE orderstatus AS ENUM ('pendiente', 'pagado', 'entregado', 'cancelado');")
-    op.execute("ALTER TABLE orders ALTER COLUMN status TYPE orderstatus USING \
-        CASE status \
-            WHEN 'pending' THEN 'pendiente' \
-            WHEN 'paid' THEN 'pagado' \
-            WHEN 'delivered' THEN 'entregado' \
-            WHEN 'cancelled' THEN 'cancelado' \
-        END::orderstatus;")
-    op.execute("DROP TYPE orderstatus_new;")
-
-    # Revertir ENUM PaymentType
-    op.execute("ALTER TYPE paymenttype RENAME TO paymenttype_new;")
-    op.execute("CREATE TYPE paymenttype AS ENUM ('efectivo', 'tarjeta', 'puntos');")
-    op.execute("ALTER TABLE orders ALTER COLUMN payment_type TYPE paymenttype USING \
-        CASE payment_type \
-            WHEN 'cash' THEN 'efectivo' \
-            WHEN 'card' THEN 'tarjeta' \
-            WHEN 'points' THEN 'puntos' \
-        END::paymenttype;")
-    op.execute("DROP TYPE paymenttype_new;")
+    op.get_bind()
