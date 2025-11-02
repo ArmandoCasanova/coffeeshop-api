@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
 # Routers
 from app.api.auth.auth_router import router as auth_router
@@ -9,6 +10,19 @@ from app.api.ingredients.ingredient_router import router as ingredient_router
 
 # Configuración
 from .core.settings import settings
+from .core.redis_client import RedisClient
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Inicializar Redis
+    await RedisClient.get_client()
+    print("✅ Redis connection established")
+    yield
+    # Shutdown: Cerrar conexión Redis
+    await RedisClient.close()
+    print("❌ Redis connection closed")
+
 
 # Crear instancia de FastAPI con la configuración del proyecto
 app = FastAPI(
@@ -18,6 +32,7 @@ app = FastAPI(
     description="API para gestión de cafetería",
     version="1.0.0",
     openapi_url=f"{settings.API_V1}/openapi.json",
+    lifespan=lifespan,
 )
 
 origins = [
