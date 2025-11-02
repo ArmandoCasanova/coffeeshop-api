@@ -26,11 +26,6 @@ async def signin(data: LoginSchema, session: Session = Depends(get_db)):
     """Iniciar sesión"""
     try:
         controller = AuthController(session)
-        user = await controller.get_current_user_from_login(data.email)
-        controller.verify_user_password(user, data.password)
-        await controller.is_user_verified(user)
-        return await controller.login(user, data.password)
-    except HTTPException as e:
-        raise e
+        return await controller.login(data.email, data.password)
     except Exception as e:
         raise e

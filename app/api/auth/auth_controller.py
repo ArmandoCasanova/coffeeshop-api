@@ -1,106 +1,45 @@
-from datetime import datetime, timezone
-from uuid import uuid4
 from sqlmodel import Session
 from fastapi import HTTPException
+from pydantic import EmailStr
 
-from app.constants.user_constants import UserRoles
-from app.models.users.user_model import UserModel
-from app.api.users.user_service import UserService
+from app.api.auth.auth_service import AuthService
 from app.api.auth.auth_schema import SignupSchema, AuthResponseSchema
-from app.utils.security import get_user_token, verify_password
-from app.core.http_response import CoffeeAppHttpResponse
-from app.constants.response_codes import CoffeeAppResponseCodes
 
 
 class AuthController:
     def __init__(self, session: Session):
-        self.session = session
+        self.auth_service = AuthService(session)
 
     async def signup(self, data: SignupSchema) -> AuthResponseSchema:
         try:
-
-            existing_user = await UserService.get_user_by_email(
-                data.email, self.session
-            )
-            if existing_user:
-                CoffeeAppHttpResponse.bad_request(
-                    data=None,
-                    error_id=CoffeeAppResponseCodes.EXISTING_EMAIL.code,
-                    message=CoffeeAppResponseCodes.EXISTING_EMAIL.detail,
-                )
-
-            user = await UserService.create_user(
-                user_data=data, role=UserRoles.CUSTOMER.value, session=self.session
-            )
-
-            access_token = get_user_token(user, is_refresh=False)
-            refresh_token = get_user_token(user, is_refresh=True)
-
+            user = await self.auth_service.signup_user(data)
+            tokens = self.auth_service.generate_tokens_for_user(user)
             return AuthResponseSchema(
                 user_id=user.user_id,
                 email=user.email,
                 name=user.name,
                 last_name=user.last_name,
                 role=user.role,
-                access_token=access_token,
-                refresh_token=refresh_token,
+                access_token=tokens["access_token"],
+                refresh_token=tokens["refresh_token"],
                 is_verified=user.is_verified,
             )
         except HTTPException as e:
             raise e
 
-    async def get_current_user_from_login(self, email: str) -> UserModel:
+    async def login(self, email: EmailStr, password: str) -> AuthResponseSchema:
         try:
-            user = await UserService.get_user_by_email(
-                email=email, session=self.session
-            )
-            if user is False:
-                CoffeeAppHttpResponse.not_found(
-                    data=None,
-                    error_id=CoffeeAppResponseCodes.UNEXISTING_USER.code,
-                    message=CoffeeAppResponseCodes.UNEXISTING_USER.detail,
-                )
-            return user
-        except HTTPException:
-            raise
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-    def verify_user_password(self, user: UserModel, password: str) -> bool:
-        is_valid_password = verify_password(
-            plain_password=password, hashed_password=user.password
-        )
-        if not is_valid_password:
-            CoffeeAppHttpResponse.unauthorized_with_code(
-                error_id=CoffeeAppResponseCodes.INVALID_PASSWORD.code,
-                message=CoffeeAppResponseCodes.INVALID_PASSWORD.detail,
-            )
-        return True
-
-    async def is_user_verified(self, user: UserModel):
-        if not user.is_verified:
-            CoffeeAppHttpResponse.forbidden(
-                data=None,
-                error_id=CoffeeAppResponseCodes.UNVERIFIED_USER.code,
-                message=CoffeeAppResponseCodes.UNVERIFIED_USER.detail,
-            )
-
-    async def login(self, user: UserModel, password: str) -> AuthResponseSchema:
-        try:
-            access_token = get_user_token(user, is_refresh=False)
-            refresh_token = get_user_token(user, is_refresh=True)
-
+            user = await self.auth_service.authenticate_user(email, password)
+            tokens = self.auth_service.generate_tokens_for_user(user)
             return AuthResponseSchema(
                 user_id=user.user_id,
                 email=user.email,
                 name=user.name,
                 last_name=user.last_name,
                 role=user.role,
-                access_token=access_token,
-                refresh_token=refresh_token,
+                access_token=tokens["access_token"],
+                refresh_token=tokens["refresh_token"],
                 is_verified=user.is_verified,
             )
-        except HTTPException:
-            raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))

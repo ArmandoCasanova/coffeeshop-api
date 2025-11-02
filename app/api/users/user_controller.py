@@ -1,27 +1,47 @@
-
-
-from pydantic import EmailStr
-from sqlmodel import Session
-
+from uuid import UUID
+from fastapi import HTTPException
 from app.api.users.user_service import UserService
-from app.constants.response_codes import CoffeeAppResponseCodes
-from app.core.http_response import CoffeeAppHttpResponse
-
+from app.api.users.user_schema import UserResponseSchema, UserUpdateSchema, UserPointsResponseSchema
 
 class UserController:
-    def __init__(self, session: Session):
-        self.session = session
+    def __init__(self, session):
+        self.user_service = UserService(session)
 
-    async def validate_existing_user(self, user_email: EmailStr) -> bool:
-        user_by_email = await UserService.get_user_by_email(
-            email=user_email, session=self.session
-        )
-        if user_by_email:
-            raise CoffeeAppHttpResponse.forbidden(
-                data={
-                    "message": CoffeeAppResponseCodes.EXISTING_EMAIL.detail,
-                    "providedValue": user_email,
-                },
-                error_id=CoffeeAppResponseCodes.EXISTING_EMAIL.code,
+    async def get_user_profile(self, user_id: UUID) -> UserResponseSchema:
+        try:
+            user = await self.user_service.get_user_profile(user_id)
+            return UserResponseSchema.model_validate(user)
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    async def update_user_profile(self, user_id: UUID, user_data: UserUpdateSchema) -> UserResponseSchema:
+        try:
+            updated_user = await self.user_service.update_user_profile(user_id, user_data)
+            return UserResponseSchema.model_validate(updated_user)
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    async def get_user_points(self, user_id: UUID) -> UserPointsResponseSchema:
+        try:
+            user = await self.user_service.get_user_profile(user_id)
+            return UserPointsResponseSchema(
+                user_id=user.user_id,
+                points=user.points
             )
-        return True
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    async def change_user_password(self, user_id: UUID, old_password: str, new_password: str) -> dict:
+        try:
+            result = await self.user_service.change_user_password(user_id, old_password, new_password)
+            return result
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
