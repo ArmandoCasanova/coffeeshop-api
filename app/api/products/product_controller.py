@@ -1,3 +1,4 @@
+from app.core.http_response import CoffeeAppHttpResponse
 from typing import Optional
 from sqlmodel import Session
 from fastapi import HTTPException
@@ -24,20 +25,20 @@ class ProductController:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def get_product(self, product_id: UUID) -> ProductResponseSchema:
         """Obtener un producto por ID"""
         try:
             product = await ProductService.get_product_by_id(product_id, self.session)
             if not product:
-                raise HTTPException(status_code=404, detail="Product not found")
+                    CoffeeAppHttpResponse.not_found(message="Product not found")
             
             return ProductResponseSchema.model_validate(product)
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def get_all_products(
         self, 
@@ -63,7 +64,7 @@ class ProductController:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def update_product(
         self, 
@@ -74,26 +75,26 @@ class ProductController:
         try:
             product = await ProductService.update_product(product_id, product_data, self.session)
             if not product:
-                raise HTTPException(status_code=404, detail="Product not found")
+                    CoffeeAppHttpResponse.not_found(message="Product not found")
             
             return ProductResponseSchema.model_validate(product)
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def delete_product(self, product_id: UUID) -> dict:
         """Eliminar un producto"""
         try:
             deleted = await ProductService.delete_product(product_id, self.session)
             if not deleted:
-                raise HTTPException(status_code=404, detail="Product not found")
+                    CoffeeAppHttpResponse.not_found(message="Product not found")
             
             return {"message": "Product deleted successfully"}
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def search_products(
         self, 
@@ -119,4 +120,4 @@ class ProductController:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()

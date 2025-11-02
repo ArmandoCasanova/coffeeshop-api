@@ -1,139 +1,61 @@
+from app.core.http_response import CoffeeAppHttpResponse
 from typing import Optional, List
-from sqlmodel import Session, select, func
+from sqlmodel import Session
 from fastapi import HTTPException
 from uuid import UUID
-
-from app.models.catalog.product_model import ProductModel
 from app.api.products.product_schema import ProductCreateSchema, ProductUpdateSchema
-
+from app.api.products.product_repository import ProductRepository
 
 class ProductService:
-    @staticmethod
-    async def create_product(product_data: ProductCreateSchema, session: Session) -> ProductModel:
-        """Crear un nuevo producto"""
+    def __init__(self, session: Session):
+        self.product_repository = ProductRepository(session)
+
+    async def create_product(self, product_data: ProductCreateSchema) -> object:
         try:
             product_dict = product_data.model_dump()
-            new_product = ProductModel(**product_dict)
-            session.add(new_product)
-            session.commit()
-            session.refresh(new_product)
-            return new_product
-        except HTTPException:
-            session.rollback()
-            raise
-        except Exception as e:
-            session.rollback()
-            raise HTTPException(status_code=500, detail=f"Error creating product: {str(e)}")
-
-    @staticmethod
-    async def get_product_by_id(product_id: UUID, session: Session) -> Optional[ProductModel]:
-        """Obtener producto por ID"""
-        try:
-            statement = select(ProductModel).where(ProductModel.product_id == product_id)
-            product = session.exec(statement).first()
-            return product
+            return await self.product_repository.create_product(product_dict)
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error fetching product: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
 
-    @staticmethod
-    async def get_all_products(
-        session: Session, 
-        skip: int = 0, 
-        limit: int = 10,
-        is_available: Optional[bool] = None
-    ) -> tuple[List[ProductModel], int]:
-        """Obtener todos los productos con paginación"""
+    async def get_product_by_id(self, product_id: UUID) -> Optional[object]:
         try:
-            # Base query
-            query = select(ProductModel)
-            # Filter by availability if specified
-            if is_available is not None:
-                query = query.where(ProductModel.is_available == is_available)
-            # Count total
-            count_query = select(func.count(ProductModel.product_id))
-            if is_available is not None:
-                count_query = count_query.where(ProductModel.is_available == is_available)
-            total = session.exec(count_query).one()
-            # Get paginated results
-            query = query.offset(skip).limit(limit).order_by(ProductModel.name)
-            products = session.exec(query).all()
-            return products, total
+            return await self.product_repository.get_product_by_id(product_id)
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error fetching products: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
 
-    @staticmethod
-    async def update_product(
-        product_id: UUID, 
-        product_data: ProductUpdateSchema, 
-        session: Session
-    ) -> Optional[ProductModel]:
-        """Actualizar un producto"""
+    async def get_all_products(self, skip: int = 0, limit: int = 10, is_available: Optional[bool] = None) -> tuple[list, int]:
         try:
-            # Get existing product
-            statement = select(ProductModel).where(ProductModel.product_id == product_id)
-            product = session.exec(statement).first()
-            if not product:
-                return None
-            # Update fields
+            return await self.product_repository.get_all_products(skip, limit, is_available)
+        except HTTPException:
+            raise
+        except Exception as e:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def update_product(self, product_id: UUID, product_data: ProductUpdateSchema) -> Optional[object]:
+        try:
             update_data = product_data.model_dump(exclude_unset=True)
-            for field, value in update_data.items():
-                setattr(product, field, value)
-            # updated_at se actualiza automáticamente por BaseCoffeeAppModel
-            session.add(product)
-            session.commit()
-            session.refresh(product)
-            return product
+            return await self.product_repository.update_product(product_id, update_data)
         except HTTPException:
-            session.rollback()
             raise
         except Exception as e:
-            session.rollback()
-            raise HTTPException(status_code=500, detail=f"Error updating product: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
 
-    @staticmethod
-    async def delete_product(product_id: UUID, session: Session) -> bool:
-        """Eliminar un producto"""
+    async def delete_product(self, product_id: UUID) -> bool:
         try:
-            statement = select(ProductModel).where(ProductModel.product_id == product_id)
-            product = session.exec(statement).first()
-            if not product:
-                return False
-            session.delete(product)
-            session.commit()
-            return True
+            return await self.product_repository.delete_product(product_id)
         except HTTPException:
-            session.rollback()
             raise
         except Exception as e:
-            session.rollback()
-            raise HTTPException(status_code=500, detail=f"Error deleting product: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
 
-    @staticmethod
-    async def search_products_by_name(
-        name: str, 
-        session: Session, 
-        skip: int = 0, 
-        limit: int = 10
-    ) -> tuple[List[ProductModel], int]:
-        """Buscar productos por nombre"""
+    async def search_products_by_name(self, name: str, skip: int = 0, limit: int = 10) -> tuple[list, int]:
         try:
-            # Search query (case insensitive)
-            search_pattern = f"%{name}%"
-            query = select(ProductModel).where(ProductModel.name.ilike(search_pattern))
-            # Count total
-            count_query = select(func.count(ProductModel.product_id)).where(
-                ProductModel.name.ilike(search_pattern)
-            )
-            total = session.exec(count_query).one()
-            # Get paginated results
-            query = query.offset(skip).limit(limit).order_by(ProductModel.name)
-            products = session.exec(query).all()
-            return products, total
+            return await self.product_repository.search_products_by_name(name, skip, limit)
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error searching products: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
