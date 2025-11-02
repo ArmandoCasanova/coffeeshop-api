@@ -20,6 +20,10 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1}/openapi.json",
 )
 
+origins = [
+    "http://localhost:5173",
+]
+
 # Middleware CORS
 app.add_middleware(
     CORSMiddleware,
