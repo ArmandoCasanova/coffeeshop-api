@@ -8,3 +8,4 @@ class ProductCategoryModel(BaseCoffeeAppModel, table=True):
     category_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     name: str
     description: str
+    image_url: Optional[str] = None

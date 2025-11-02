@@ -1,7 +1,13 @@
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from sqlmodel import Session, select, func
 from uuid import UUID
+from datetime import datetime, timedelta
 from app.models.catalog.product_model import ProductModel
+from app.models.catalog.product_category_model import ProductCategoryModel
+from app.models.catalog.product_category_link_model import ProductCategoryLinkModel
+from app.models.orders.order_item_model import OrderItemModel
+from app.models.orders.order_model import OrderModel
+from app.models.users.user_favorite_model import UserFavoriteModel
 
 class ProductRepository:
     def __init__(self, session: Session):
@@ -98,4 +104,205 @@ class ProductRepository:
             return True
         except Exception:
             self.session.rollback()
+            raise
+
+    def get_popular_products(self, limit: int = 10, days: int = 7) -> List[ProductModel]:
+        """
+        Get popular products based on sales from the last N days.
+        
+        Args:
+            limit: Maximum number of products to return
+            days: Number of days to look back for sales data
+            
+        Returns:
+            List of ProductModel ordered by popularity (most sold first)
+        """
+        try:
+            # Calculate the date threshold
+            date_threshold = datetime.utcnow() - timedelta(days=days)
+            
+            # Query to get product_ids ordered by total quantity sold
+            subquery = (
+                select(
+                    OrderItemModel.product_id,
+                    func.sum(OrderItemModel.quantity).label("total_sold")
+                )
+                .join(OrderModel, OrderItemModel.order_id == OrderModel.order_id)
+                .where(OrderModel.order_date >= date_threshold)
+                .where(OrderModel.status != "cancelled")
+                .group_by(OrderItemModel.product_id)
+                .order_by(func.sum(OrderItemModel.quantity).desc())
+                .limit(limit)
+            )
+            
+            # Execute the subquery to get product_ids
+            result = self.session.exec(subquery).all()
+            product_ids = [row[0] for row in result]
+            
+            if not product_ids:
+                return []
+            
+            # Get the full product details maintaining the order
+            products_query = select(ProductModel).where(
+                ProductModel.product_id.in_(product_ids),
+                ProductModel.is_available == True
+            )
+            products = self.session.exec(products_query).all()
+            
+            # Sort products based on the order of product_ids
+            product_dict = {p.product_id: p for p in products}
+            sorted_products = [product_dict[pid] for pid in product_ids if pid in product_dict]
+            
+            return sorted_products
+        except Exception:
+            raise
+
+    def get_products_by_ids(
+        self, 
+        product_ids: List[UUID], 
+        is_available: Optional[bool] = True
+    ) -> List[ProductModel]:
+        """
+        Get products by a list of product IDs.
+        
+        Args:
+            product_ids: List of product UUIDs to retrieve
+            is_available: Filter by availability (None = all, True = available, False = unavailable)
+            
+        Returns:
+            List of ProductModel instances
+        """
+        try:
+            if not product_ids:
+                return []
+            
+            # Convert string UUIDs to UUID objects if needed
+            uuid_list = [UUID(pid) if isinstance(pid, str) else pid for pid in product_ids]
+            
+            query = select(ProductModel).where(ProductModel.product_id.in_(uuid_list))
+            
+            if is_available is not None:
+                query = query.where(ProductModel.is_available == is_available)
+            
+            products = self.session.exec(query).all()
+            return list(products)
+        except Exception:
+            raise
+
+    def get_user_favorite_products(
+        self, 
+        user_id: UUID, 
+        limit: int = 10
+    ) -> List[ProductModel]:
+        """
+        Get favorite products for a specific user.
+        
+        Args:
+            user_id: UUID of the user
+            limit: Maximum number of favorite products to return
+            
+        Returns:
+            List of ProductModel instances that are in the user's favorites
+        """
+        try:
+            query = (
+                select(ProductModel)
+                .join(UserFavoriteModel, ProductModel.product_id == UserFavoriteModel.product_id)
+                .where(UserFavoriteModel.user_id == user_id)
+                .where(ProductModel.is_available == True)
+                .limit(limit)
+            )
+            
+            products = self.session.exec(query).all()
+            return list(products)
+        except Exception:
+            raise
+
+    def get_popular_categories(self, limit: int = 10, days: int = 7) -> List[Dict[str, Any]]:
+        """
+        Get popular categories based on sales from the last N days.
+        If there are fewer categories with sales than the limit, fill with categories without sales.
+        
+        Args:
+            limit: Maximum number of categories to return
+            days: Number of days to look back for sales data
+            
+        Returns:
+            List of dictionaries with category info and sales count
+        """
+        try:
+            # Calculate the date threshold
+            date_threshold = datetime.utcnow() - timedelta(days=days)
+            
+            # Query to get categories ordered by total sales
+            query_with_sales = (
+                select(
+                    ProductCategoryModel.category_id,
+                    ProductCategoryModel.name,
+                    ProductCategoryModel.description,
+                    ProductCategoryModel.image_url,
+                    func.sum(OrderItemModel.quantity).label("total_sales")
+                )
+                .join(ProductCategoryLinkModel, ProductCategoryModel.category_id == ProductCategoryLinkModel.category_id)
+                .join(ProductModel, ProductCategoryLinkModel.product_id == ProductModel.product_id)
+                .join(OrderItemModel, ProductModel.product_id == OrderItemModel.product_id)
+                .join(OrderModel, OrderItemModel.order_id == OrderModel.order_id)
+                .where(OrderModel.order_date >= date_threshold)
+                .where(OrderModel.status != "cancelled")
+                .group_by(
+                    ProductCategoryModel.category_id, 
+                    ProductCategoryModel.name, 
+                    ProductCategoryModel.description,
+                    ProductCategoryModel.image_url
+                )
+                .order_by(func.sum(OrderItemModel.quantity).desc())
+            )
+            
+            result_with_sales = self.session.exec(query_with_sales).all()
+            
+            # Convert to list of dictionaries
+            categories = []
+            category_ids_with_sales = set()
+            
+            for row in result_with_sales:
+                categories.append({
+                    "category_id": str(row[0]),
+                    "name": row[1],
+                    "description": row[2],
+                    "image_url": row[3],
+                    "total_sales": int(row[4])
+                })
+                category_ids_with_sales.add(row[0])
+            
+            # If we have fewer than limit categories, get categories without sales
+            if len(categories) < limit:
+                remaining_limit = limit - len(categories)
+                
+                # Query to get all other categories (without sales in the period)
+                query_without_sales = (
+                    select(
+                        ProductCategoryModel.category_id,
+                        ProductCategoryModel.name,
+                        ProductCategoryModel.description,
+                        ProductCategoryModel.image_url
+                    )
+                    .where(ProductCategoryModel.category_id.not_in(category_ids_with_sales))
+                    .order_by(ProductCategoryModel.name)
+                    .limit(remaining_limit)
+                )
+                
+                result_without_sales = self.session.exec(query_without_sales).all()
+                
+                for row in result_without_sales:
+                    categories.append({
+                        "category_id": str(row[0]),
+                        "name": row[1],
+                        "description": row[2],
+                        "image_url": row[3],
+                        "total_sales": 0
+                    })
+            
+            # Return only up to limit
+            return categories[:limit]
+        except Exception:
             raise
