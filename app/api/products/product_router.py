@@ -9,7 +9,8 @@ from app.api.products.product_schema import (
     ProductCreateSchema,
     ProductUpdateSchema,
     ProductResponseSchema,
-    ProductListResponseSchema
+    ProductListResponseSchema,
+    CategoryResponseSchema
 )
 
 router = APIRouter(prefix="/products", tags=["Products"])
@@ -49,7 +50,7 @@ async def search_products(
     return await controller.search_products(name, page, page_size)
 
 
-@router.get("/popular/list", response_model=ProductListResponseSchema)
+@router.get("/popular/list", response_model=list[ProductResponseSchema])
 async def get_popular_products(
     limit: int = Query(10, ge=1, le=50, description="Number of popular products to return"),
     session: Session = Depends(get_db)
@@ -59,7 +60,7 @@ async def get_popular_products(
     return await controller.get_popular_products(limit)
 
 
-@router.get("/favorites/user/{user_id}", response_model=ProductListResponseSchema)
+@router.get("/favorites/user/{user_id}", response_model=list[ProductResponseSchema])
 async def get_user_favorite_products(
     user_id: UUID,
     limit: int = Query(10, ge=1, le=50, description="Number of favorite products to return"),
@@ -68,6 +69,16 @@ async def get_user_favorite_products(
     """Obtener productos favoritos de un usuario específico"""
     controller = ProductController(session)
     return await controller.get_user_favorite_products(user_id, limit)
+
+
+@router.get("/categories/popular", response_model=list[CategoryResponseSchema])
+async def get_popular_categories(
+    limit: int = Query(10, ge=1, le=20, description="Number of popular categories to return"),
+    session: Session = Depends(get_db)
+):
+    """Obtener categorías populares basadas en ventas de los últimos 7 días"""
+    controller = ProductController(session)
+    return await controller.get_popular_categories(limit)
 
 
 @router.get("/{product_id}", response_model=ProductResponseSchema)
@@ -99,4 +110,3 @@ async def delete_product(
     """Eliminar un producto"""
     controller = ProductController(session)
     return await controller.delete_product(product_id)
-    return await controller.get_user_favorite_products(user_id, limit)

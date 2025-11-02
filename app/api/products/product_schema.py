@@ -43,3 +43,12 @@ class ProductListResponseSchema(BaseModel):
     total: int
     page: int = 1
     page_size: int = 10
+
+
+class CategoryResponseSchema(BaseModel):
+    """Schema for category response including popularity metrics"""
+    category_id: str
+    name: str
+    description: str
+    image_url: Optional[str] = None
+    total_sales: int = Field(ge=0, description="Total sales/orders for this category")

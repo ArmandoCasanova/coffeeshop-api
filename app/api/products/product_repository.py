@@ -1,8 +1,10 @@
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from sqlmodel import Session, select, func
 from uuid import UUID
 from datetime import datetime, timedelta
 from app.models.catalog.product_model import ProductModel
+from app.models.catalog.product_category_model import ProductCategoryModel
+from app.models.catalog.product_category_link_model import ProductCategoryLinkModel
 from app.models.orders.order_item_model import OrderItemModel
 from app.models.orders.order_model import OrderModel
 from app.models.users.user_favorite_model import UserFavoriteModel
@@ -104,7 +106,7 @@ class ProductRepository:
             self.session.rollback()
             raise
 
-    async def get_popular_products(self, limit: int = 10, days: int = 7) -> List[ProductModel]:
+    def get_popular_products(self, limit: int = 10, days: int = 7) -> List[ProductModel]:
         """
         Get popular products based on sales from the last N days.
         
@@ -155,7 +157,7 @@ class ProductRepository:
         except Exception:
             raise
 
-    async def get_products_by_ids(
+    def get_products_by_ids(
         self, 
         product_ids: List[UUID], 
         is_available: Optional[bool] = True
@@ -187,7 +189,7 @@ class ProductRepository:
         except Exception:
             raise
 
-    async def get_user_favorite_products(
+    def get_user_favorite_products(
         self, 
         user_id: UUID, 
         limit: int = 10
@@ -213,5 +215,94 @@ class ProductRepository:
             
             products = self.session.exec(query).all()
             return list(products)
+        except Exception:
+            raise
+
+    def get_popular_categories(self, limit: int = 10, days: int = 7) -> List[Dict[str, Any]]:
+        """
+        Get popular categories based on sales from the last N days.
+        If there are fewer categories with sales than the limit, fill with categories without sales.
+        
+        Args:
+            limit: Maximum number of categories to return
+            days: Number of days to look back for sales data
+            
+        Returns:
+            List of dictionaries with category info and sales count
+        """
+        try:
+            # Calculate the date threshold
+            date_threshold = datetime.utcnow() - timedelta(days=days)
+            
+            # Query to get categories ordered by total sales
+            query_with_sales = (
+                select(
+                    ProductCategoryModel.category_id,
+                    ProductCategoryModel.name,
+                    ProductCategoryModel.description,
+                    ProductCategoryModel.image_url,
+                    func.sum(OrderItemModel.quantity).label("total_sales")
+                )
+                .join(ProductCategoryLinkModel, ProductCategoryModel.category_id == ProductCategoryLinkModel.category_id)
+                .join(ProductModel, ProductCategoryLinkModel.product_id == ProductModel.product_id)
+                .join(OrderItemModel, ProductModel.product_id == OrderItemModel.product_id)
+                .join(OrderModel, OrderItemModel.order_id == OrderModel.order_id)
+                .where(OrderModel.order_date >= date_threshold)
+                .where(OrderModel.status != "cancelled")
+                .group_by(
+                    ProductCategoryModel.category_id, 
+                    ProductCategoryModel.name, 
+                    ProductCategoryModel.description,
+                    ProductCategoryModel.image_url
+                )
+                .order_by(func.sum(OrderItemModel.quantity).desc())
+            )
+            
+            result_with_sales = self.session.exec(query_with_sales).all()
+            
+            # Convert to list of dictionaries
+            categories = []
+            category_ids_with_sales = set()
+            
+            for row in result_with_sales:
+                categories.append({
+                    "category_id": str(row[0]),
+                    "name": row[1],
+                    "description": row[2],
+                    "image_url": row[3],
+                    "total_sales": int(row[4])
+                })
+                category_ids_with_sales.add(row[0])
+            
+            # If we have fewer than limit categories, get categories without sales
+            if len(categories) < limit:
+                remaining_limit = limit - len(categories)
+                
+                # Query to get all other categories (without sales in the period)
+                query_without_sales = (
+                    select(
+                        ProductCategoryModel.category_id,
+                        ProductCategoryModel.name,
+                        ProductCategoryModel.description,
+                        ProductCategoryModel.image_url
+                    )
+                    .where(ProductCategoryModel.category_id.not_in(category_ids_with_sales))
+                    .order_by(ProductCategoryModel.name)
+                    .limit(remaining_limit)
+                )
+                
+                result_without_sales = self.session.exec(query_without_sales).all()
+                
+                for row in result_without_sales:
+                    categories.append({
+                        "category_id": str(row[0]),
+                        "name": row[1],
+                        "description": row[2],
+                        "image_url": row[3],
+                        "total_sales": 0
+                    })
+            
+            # Return only up to limit
+            return categories[:limit]
         except Exception:
             raise
