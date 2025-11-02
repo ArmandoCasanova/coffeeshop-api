@@ -1,3 +1,4 @@
+from app.core.http_response import CoffeeAppHttpResponse
 from typing import Optional, List
 from sqlmodel import Session
 from fastapi import HTTPException
@@ -16,7 +17,7 @@ class ProductService:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error creating product: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
 
     async def get_product_by_id(self, product_id: UUID) -> Optional[object]:
         try:
@@ -24,7 +25,7 @@ class ProductService:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error fetching product: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
 
     async def get_all_products(self, skip: int = 0, limit: int = 10, is_available: Optional[bool] = None) -> tuple[list, int]:
         try:
@@ -32,7 +33,7 @@ class ProductService:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error fetching products: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
 
     async def update_product(self, product_id: UUID, product_data: ProductUpdateSchema) -> Optional[object]:
         try:
@@ -41,7 +42,7 @@ class ProductService:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error updating product: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
 
     async def delete_product(self, product_id: UUID) -> bool:
         try:
@@ -49,7 +50,7 @@ class ProductService:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error deleting product: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
 
     async def search_products_by_name(self, name: str, skip: int = 0, limit: int = 10) -> tuple[list, int]:
         try:
@@ -57,4 +58,4 @@ class ProductService:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error searching products: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()

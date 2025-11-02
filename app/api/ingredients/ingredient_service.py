@@ -1,3 +1,4 @@
+from app.core.http_response import CoffeeAppHttpResponse
 from typing import Optional, List
 from sqlmodel import Session
 from fastapi import HTTPException
@@ -16,7 +17,7 @@ class IngredientService:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error creating ingredient: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
 
     async def get_ingredient_by_id(self, ingredient_id: UUID) -> Optional[object]:
         try:
@@ -24,7 +25,7 @@ class IngredientService:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error fetching ingredient: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
 
     async def get_all_ingredients(self, skip: int = 0, limit: int = 10) -> tuple[list, int]:
         try:
@@ -32,7 +33,7 @@ class IngredientService:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error fetching ingredients: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
 
     async def update_ingredient(self, ingredient_id: UUID, ingredient_data: IngredientUpdateSchema) -> Optional[object]:
         try:
@@ -41,7 +42,7 @@ class IngredientService:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error updating ingredient: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
 
     async def delete_ingredient(self, ingredient_id: UUID) -> bool:
         try:
@@ -49,7 +50,7 @@ class IngredientService:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error deleting ingredient: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
 
     async def get_low_stock_ingredients(self) -> list:
         try:
@@ -57,16 +58,16 @@ class IngredientService:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error fetching low stock ingredients: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
 
     async def update_stock_level(self, ingredient_id: UUID, new_stock_level: int) -> Optional[object]:
         try:
             return await self.ingredient_repository.update_ingredient_stock(ingredient_id, new_stock_level)
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error updating stock level: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
 
     async def search_ingredients_by_name(self, name: str, skip: int = 0, limit: int = 10) -> tuple[list, int]:
         try:
             return await self.ingredient_repository.search_ingredients_by_name(name, skip, limit)
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error searching ingredients: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()

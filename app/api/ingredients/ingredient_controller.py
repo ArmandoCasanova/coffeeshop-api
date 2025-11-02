@@ -1,3 +1,4 @@
+from app.core.http_response import CoffeeAppHttpResponse
 from typing import List
 from sqlmodel import Session
 from fastapi import HTTPException
@@ -25,18 +26,18 @@ class IngredientController:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def get_ingredient(self, ingredient_id: UUID) -> IngredientResponseSchema:
         try:
             ingredient = await self.ingredient_service.get_ingredient_by_id(ingredient_id)
             if not ingredient:
-                raise HTTPException(status_code=404, detail="Ingredient not found")
+                    CoffeeAppHttpResponse.not_found(message="Ingredient not found")
             return IngredientResponseSchema.model_validate(ingredient)
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def get_all_ingredients(self, page: int = 1, page_size: int = 10) -> IngredientListResponseSchema:
         try:
@@ -58,23 +59,23 @@ class IngredientController:
         try:
             ingredient = await self.ingredient_service.update_ingredient(ingredient_id, ingredient_data)
             if not ingredient:
-                raise HTTPException(status_code=404, detail="Ingredient not found")
+                    CoffeeAppHttpResponse.not_found(message="Ingredient not found")
             return IngredientResponseSchema.model_validate(ingredient)
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def delete_ingredient(self, ingredient_id: UUID) -> dict:
         try:
             deleted = await self.ingredient_service.delete_ingredient(ingredient_id)
             if not deleted:
-                raise HTTPException(status_code=404, detail="Ingredient not found")
+                    CoffeeAppHttpResponse.not_found(message="Ingredient not found")
             return {"message": "Ingredient deleted successfully"}
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def get_low_stock_ingredients(self) -> List[LowStockIngredientSchema]:
         try:
@@ -93,18 +94,18 @@ class IngredientController:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def update_stock_level(self, ingredient_id: UUID, stock_data: IngredientStockUpdateSchema) -> IngredientResponseSchema:
         try:
             ingredient = await self.ingredient_service.update_stock_level(ingredient_id, stock_data.stock_current_level)
             if not ingredient:
-                raise HTTPException(status_code=404, detail="Ingredient not found")
+                    CoffeeAppHttpResponse.not_found(message="Ingredient not found")
             return IngredientResponseSchema.model_validate(ingredient)
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def search_ingredients(self, name: str, page: int = 1, page_size: int = 10) -> IngredientListResponseSchema:
         try:
@@ -120,4 +121,4 @@ class IngredientController:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()

@@ -1,3 +1,4 @@
+from app.core.http_response import CoffeeAppHttpResponse
 from uuid import UUID
 from fastapi import HTTPException
 from app.api.users.user_service import UserService
@@ -14,7 +15,7 @@ class UserController:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def update_user_profile(self, user_id: UUID, user_data: UserUpdateSchema) -> UserResponseSchema:
         try:
@@ -23,7 +24,7 @@ class UserController:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def get_user_points(self, user_id: UUID) -> UserPointsResponseSchema:
         try:
@@ -35,7 +36,7 @@ class UserController:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def change_user_password(self, user_id: UUID, old_password: str, new_password: str) -> dict:
         try:
@@ -44,4 +45,4 @@ class UserController:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()

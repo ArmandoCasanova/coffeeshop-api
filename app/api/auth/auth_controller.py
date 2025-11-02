@@ -1,5 +1,6 @@
 from sqlmodel import Session
 from fastapi import HTTPException
+from app.core.http_response import CoffeeAppHttpResponse
 from pydantic import EmailStr
 
 from app.api.auth.auth_service import AuthService
@@ -41,5 +42,7 @@ class AuthController:
                 refresh_token=tokens["refresh_token"],
                 is_verified=user.is_verified,
             )
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+        except HTTPException as e:
+            raise e
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
