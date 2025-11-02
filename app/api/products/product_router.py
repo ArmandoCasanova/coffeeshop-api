@@ -78,3 +78,24 @@ async def delete_product(
     """Eliminar un producto"""
     controller = ProductController(session)
     return await controller.delete_product(product_id)
+
+
+@router.get("/popular/list", response_model=list[ProductResponseSchema])
+async def get_popular_products(
+    limit: int = Query(10, ge=1, le=50, description="Number of popular products to return"),
+    session: Session = Depends(get_db)
+):
+    """Obtener productos populares basados en ventas de los últimos 7 días"""
+    controller = ProductController(session)
+    return await controller.get_popular_products(limit)
+
+
+@router.get("/favorites/user/{user_id}", response_model=list[ProductResponseSchema])
+async def get_user_favorite_products(
+    user_id: UUID,
+    limit: int = Query(10, ge=1, le=50, description="Number of favorite products to return"),
+    session: Session = Depends(get_db)
+):
+    """Obtener productos favoritos de un usuario específico"""
+    controller = ProductController(session)
+    return await controller.get_user_favorite_products(user_id, limit)

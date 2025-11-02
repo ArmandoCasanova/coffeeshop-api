@@ -120,3 +120,23 @@ class ProductController:
             raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
+
+    async def get_popular_products(self, limit: int = 10) -> list[ProductResponseSchema]:
+        """Obtener productos populares basados en ventas de los últimos 7 días"""
+        try:
+            products = await ProductService.get_popular_products(self.session, limit)
+            return [ProductResponseSchema.model_validate(product) for product in products]
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    async def get_user_favorite_products(self, user_id: UUID, limit: int = 10) -> list[ProductResponseSchema]:
+        """Obtener productos favoritos de un usuario"""
+        try:
+            products = await ProductService.get_user_favorite_products(user_id, self.session, limit)
+            return [ProductResponseSchema.model_validate(product) for product in products]
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
