@@ -1,3 +1,4 @@
+from app.core.http_response import CoffeeAppHttpResponse
 from typing import Optional
 from sqlmodel import Session
 from fastapi import HTTPException
@@ -15,29 +16,30 @@ from app.api.products.product_schema import (
 class ProductController:
     def __init__(self, session: Session):
         self.session = session
+        self.service = ProductService(session)
 
     async def create_product(self, product_data: ProductCreateSchema) -> ProductResponseSchema:
         """Crear un nuevo producto"""
         try:
-            product = await ProductService.create_product(product_data, self.session)
+            product = await self.service.create_product(product_data)
             return ProductResponseSchema.model_validate(product)
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def get_product(self, product_id: UUID) -> ProductResponseSchema:
         """Obtener un producto por ID"""
         try:
-            product = await ProductService.get_product_by_id(product_id, self.session)
+            product = await self.service.get_product_by_id(product_id)
             if not product:
-                raise HTTPException(status_code=404, detail="Product not found")
+                    CoffeeAppHttpResponse.not_found(message="Product not found")
             
             return ProductResponseSchema.model_validate(product)
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def get_all_products(
         self, 
@@ -48,9 +50,7 @@ class ProductController:
         """Obtener todos los productos con paginación"""
         try:
             skip = (page - 1) * page_size
-            products, total = await ProductService.get_all_products(
-                self.session, skip, page_size, is_available
-            )
+            products, total = await self.service.get_all_products(skip, page_size, is_available)
             
             product_list = [ProductResponseSchema.model_validate(product) for product in products]
             
@@ -63,7 +63,7 @@ class ProductController:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def update_product(
         self, 
@@ -72,28 +72,28 @@ class ProductController:
     ) -> ProductResponseSchema:
         """Actualizar un producto"""
         try:
-            product = await ProductService.update_product(product_id, product_data, self.session)
+            product = await self.service.update_product(product_id, product_data)
             if not product:
-                raise HTTPException(status_code=404, detail="Product not found")
+                    CoffeeAppHttpResponse.not_found(message="Product not found")
             
             return ProductResponseSchema.model_validate(product)
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def delete_product(self, product_id: UUID) -> dict:
         """Eliminar un producto"""
         try:
-            deleted = await ProductService.delete_product(product_id, self.session)
+            deleted = await self.service.delete_product(product_id)
             if not deleted:
-                raise HTTPException(status_code=404, detail="Product not found")
+                    CoffeeAppHttpResponse.not_found(message="Product not found")
             
             return {"message": "Product deleted successfully"}
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
     async def search_products(
         self, 
@@ -104,9 +104,7 @@ class ProductController:
         """Buscar productos por nombre"""
         try:
             skip = (page - 1) * page_size
-            products, total = await ProductService.search_products_by_name(
-                name, self.session, skip, page_size
-            )
+            products, total = await self.service.search_products_by_name(name, skip, page_size)
             
             product_list = [ProductResponseSchema.model_validate(product) for product in products]
             
@@ -119,24 +117,38 @@ class ProductController:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
-    async def get_popular_products(self, limit: int = 10) -> list[ProductResponseSchema]:
-        """Obtener productos populares basados en ventas de los últimos 7 días"""
+    async def get_popular_products(self, limit: int = 10) -> ProductListResponseSchema:
+        """Obtener productos populares basados en ventas"""
         try:
-            products = await ProductService.get_popular_products(self.session, limit)
-            return [ProductResponseSchema.model_validate(product) for product in products]
+            products = await self.service.get_popular_products(limit=limit)
+            product_list = [ProductResponseSchema.model_validate(product) for product in products]
+            
+            return ProductListResponseSchema(
+                products=product_list,
+                total=len(product_list),
+                page=1,
+                page_size=limit
+            )
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
 
-    async def get_user_favorite_products(self, user_id: UUID, limit: int = 10) -> list[ProductResponseSchema]:
+    async def get_user_favorite_products(self, user_id: UUID, limit: int = 10) -> ProductListResponseSchema:
         """Obtener productos favoritos de un usuario"""
         try:
-            products = await ProductService.get_user_favorite_products(user_id, self.session, limit)
-            return [ProductResponseSchema.model_validate(product) for product in products]
+            products = await self.service.get_user_favorite_products(user_id=user_id, limit=limit)
+            product_list = [ProductResponseSchema.model_validate(product) for product in products]
+            
+            return ProductListResponseSchema(
+                products=product_list,
+                total=len(product_list),
+                page=1,
+                page_size=limit
+            )
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+                CoffeeAppHttpResponse.internal_error()
