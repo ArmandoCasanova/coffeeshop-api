@@ -1,7 +1,7 @@
 from uuid import UUID
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from pydantic.alias_generators import to_camel
 
 from app.utils.regex import Regex
@@ -29,12 +29,20 @@ class UserCreateSchema(BaseModel):
     password: str = Field(min_length=8, max_length=20, pattern=Regex.PASSWORD)
     confirm_password: str = Field(min_length=8, max_length=20)
 
-    @field_validator('confirm_password')
+    @field_validator("password")
     @classmethod
-    def validate_password_match(cls, v, info):
-        if 'password' in info.data and v != info.data['password']:
+    def validate_password_fields(cls, p: str) -> str:
+        import re
+        re_for_pw: re.Pattern[str] = re.compile(Regex.PASSWORD)
+        if not re_for_pw.match(p):
+            raise ValueError("Contraseña no válida")
+        return p
+
+    @model_validator(mode="after")
+    def passwords_match(self) -> "UserCreateSchema":
+        if self.password != self.confirm_password:
             raise ValueError('Las contraseñas no coinciden')
-        return v
+        return self
 
     class Config:
         alias_generator = to_camel
@@ -68,7 +76,7 @@ class UserPointsResponseSchema(BaseModel):
 
 
 class ChangePasswordSchema(BaseModel):
-    current_password: str = Field(min_length=1, description="Contraseña actual del usuario")
+    current_password: str = Field(min_length=8, description="Contraseña actual del usuario")
     new_password: str = Field(min_length=8, max_length=20, pattern=Regex.PASSWORD, description="Nueva contraseña")
 
     class Config:
