@@ -2,13 +2,16 @@ from fastapi import APIRouter, Depends
 from sqlmodel import Session
 from app.api.categories.category_controller import CategoryController
 from app.core.database import get_db
-from app.models.catalog.product_category_model import ProductCategoryModel
 
-router = APIRouter(prefix="/api/v1/categories", tags=["Categories"])
+category_router = APIRouter(prefix="/categories", tags=["Categories"])
 
 
-@router.get("/", response_model=list[ProductCategoryModel])
+@category_router.get("/")
 async def get_all_categories(session: Session = Depends(get_db)):
-    """Obtener todas las categorías."""
+    """
+    Obtener todas las categorías.
+    """
     controller = CategoryController(session)
-    return await controller.get_all_categories()
+    categories = await controller.get_all_categories()
+    # Ya vienen como dicts desde el service, no hacer model_dump de nuevo
+    return categories
