@@ -30,7 +30,6 @@ class PromotionUpdateSchema(BaseModel):
 
 class PromotionResponseSchema(BaseModel):
     promotion_id: UUID
-    name: str 
     discount_type: DiscountType
     discount_value: Decimal
     start_date: datetime
@@ -78,7 +77,10 @@ class ProductPromotionDetailSchema(BaseModel):
     class Config:
         from_attributes = True
         populate_by_name = True 
-
+    @computed_field
+    @property
+    def unique_row_id(self) -> str:
+        return f"{self.product_id}_{self.promotion_id}"
     @computed_field
     @property
     def precio_final(self) -> Decimal:
