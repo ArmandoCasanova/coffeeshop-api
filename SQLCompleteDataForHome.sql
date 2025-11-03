@@ -357,6 +357,148 @@ INSERT INTO user_favorites (user_id, product_id) VALUES
 ('10000000-0000-0000-0000-000000000005', '60000000-0000-0000-0000-000000000015'), -- Cookie
 ('10000000-0000-0000-0000-000000000005', '60000000-0000-0000-0000-000000000003'); -- Vanilla Frappé
 
+--INSERT DE RODRIGO DESPLIEGUE
+
+INSERT INTO public.promotions
+(promotion_id, discount_type, discount_value, start_date, end_date, created_at, updated_at)
+VALUES
+(
+    'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d', 
+    'percentage',
+    20.0,                                  
+    '2025-01-01 00:00:00',
+    '2025-01-31 23:59:59',
+    '2025-01-01 10:00:00',                 
+    '2025-01-01 10:00:00'                  
+);
+INSERT INTO public.promotions
+(promotion_id, discount_type, discount_value, start_date, end_date, created_at, updated_at)
+VALUES
+(
+    'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e',
+    'fixed_amount',
+    10.00,                                 
+    '2026-02-01 00:00:00',
+    '2026-02-14 23:59:59',
+    '2025-11-01 14:30:00',
+    '2025-11-01 14:30:00'
+);
+INSERT INTO public.promotions
+(promotion_id, discount_type, discount_value, start_date, end_date, created_at, updated_at)
+VALUES
+(
+    'f0a1b2c3-d4e5-4f6a-7b8c-9d0e1f2a3b4c',
+    'percentage',
+    25.0,                                  
+    '2025-12-01 00:00:00',
+    '2025-12-01 23:59:59',
+    '2025-11-15 09:00:00',
+    '2025-11-15 09:00:00'
+);
+INSERT INTO public.promotions
+(promotion_id, discount_type, discount_value, start_date, end_date, created_at, updated_at)
+VALUES
+(
+    'e1b2c3d4-a5f6-4a7b-8c9d-0e1f2a3b4c5d',
+    'fixed_amount',
+    15.00,                
+    '2026-03-20 00:00:00',
+    '2026-03-31 23:59:59',
+    '2026-03-01 12:00:00',
+    '2026-03-01 12:00:00'
+);
+INSERT INTO public.promotions
+(promotion_id, discount_type, discount_value, start_date, end_date, created_at, updated_at)
+VALUES
+(
+    'c2d3e4f5-b6a7-4b8c-9d0e-1f2a3b4c5d6e', 
+    'percentage',
+    10.0,                                  
+    '2024-06-10 00:00:00',
+    '2024-06-17 23:59:59',
+    '2024-06-01 08:00:00',
+    '2024-06-01 08:00:00'
+);
+
+INSERT INTO public.product_promotions
+(product_id, promotion_id, created_at, updated_at)
+VALUES
+(
+    '60000000-0000-0000-0000-000000000005',
+    'c2d3e4f5-b6a7-4b8c-9d0e-1f2a3b4c5d6e', 
+    NOW(),
+    NOW()
+);
+
+INSERT INTO public.product_promotions
+(product_id, promotion_id, created_at, updated_at)
+VALUES
+(
+    '60000000-0000-0000-0000-000000000006',
+    'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e', 
+    NOW(),
+    NOW()
+);
+
+INSERT INTO public.product_promotions
+(product_id, promotion_id, created_at, updated_at)
+VALUES
+(
+    '60000000-0000-0000-0000-000000000007',
+    '5e7e9ddb-6323-4acf-a80b-17216f5cc63d', 
+    NOW(),
+    NOW()
+);
+INSERT INTO public.product_promotions
+(product_id, promotion_id, created_at, updated_at)
+VALUES
+(
+    '60000000-0000-0000-0000-000000000008',
+    'f0a1b2c3-d4e5-4f6a-7b8c-9d0e1f2a3b4c', 
+    NOW(),
+    NOW()
+);
+
+INSERT INTO public.product_promotions
+(product_id, promotion_id, created_at, updated_at)
+VALUES
+(
+    '60000000-0000-0000-0000-000000000009',
+    'e1b2c3d4-a5f6-4a7b-8c9d-0e1f2a3b4c5d', 
+    NOW(),
+    NOW()
+);
+
+INSERT INTO public.product_promotions
+(product_id, promotion_id, created_at, updated_at)
+VALUES
+(
+    '60000000-0000-0000-0000-000000000010',
+    'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d', 
+    NOW(),
+    NOW()
+);
+
+INSERT INTO public.product_promotions
+(product_id, promotion_id, created_at, updated_at)
+VALUES
+(
+    '60000000-0000-0000-0000-000000000011',
+    'c2d3e4f5-b6a7-4b8c-9d0e-1f2a3b4c5d6e', 
+    NOW(),
+    NOW()
+);
+
+INSERT INTO public.product_promotions
+(product_id, promotion_id, created_at, updated_at)
+VALUES
+(
+    '60000000-0000-0000-0000-000000000012',
+    'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e', 
+    NOW(),
+    NOW()
+);
+
 -- =============================================
 -- RESUMEN DE DATOS INSERTADOS:
 -- =============================================
