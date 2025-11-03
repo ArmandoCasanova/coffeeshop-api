@@ -3,8 +3,11 @@ from uuid import UUID
 from sqlmodel import Session
 from fastapi import HTTPException
 from pydantic import EmailStr
+from typing import Union
 
 from app.models.users.user_model import UserModel
+from app.models.users.verification_code_model import VerificationCodeModel
+from app.models.users.verification_code_password_reset_model import VerificationCodePasswordResetModel
 from app.constants.user_constants import UserRoles
 from app.constants.response_codes import CoffeeAppResponseCodes
 from app.core.http_response import CoffeeAppHttpResponse
@@ -134,6 +137,168 @@ class AuthService:
             await self.auth_repository.update_user_password(user_id, hashed_password)
             
             return {"message": "Password reset successfully"}
+        except HTTPException:
+            raise
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
+    # ==================== VERIFICATION CODE METHODS ====================
+
+    async def generate_and_create_verification_code(self, user_id: UUID) -> VerificationCodeModel:
+        """
+        Generar y crear código de verificación único para un usuario
+        """
+        try:
+            code = await self.auth_repository.generate_unique_verification_code(is_password_reset=False)
+            verification_code = await self.auth_repository.create_verification_code(code, user_id)
+            return verification_code
+        except HTTPException:
+            raise
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def generate_and_create_password_reset_code(self, user_id: UUID) -> VerificationCodePasswordResetModel:
+        """
+        Generar y crear código de reset de contraseña para un usuario
+        """
+        try:
+            code = await self.auth_repository.generate_unique_verification_code(is_password_reset=True)
+            reset_code = await self.auth_repository.create_password_reset_code(code, user_id)
+            return reset_code
+        except HTTPException:
+            raise
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def get_and_validate_verification_code(self, code: str) -> VerificationCodeModel:
+        """
+        Obtener y validar código de verificación
+        Aplica validaciones de negocio: existe, está activo
+        """
+        try:
+            verification_code = await self.auth_repository.get_verification_code(code)
+            
+            if not verification_code:
+                CoffeeAppHttpResponse.unauthorized_with_code(
+                    error_id=CoffeeAppResponseCodes.INVALID_CODE.code,
+                    message=CoffeeAppResponseCodes.INVALID_CODE.detail,
+                )
+            
+            if not verification_code.is_alive:
+                CoffeeAppHttpResponse.bad_request(
+                    data={
+                        "message": CoffeeAppResponseCodes.ALREADY_USED_CODE.detail,
+                        "providedValue": {"code": verification_code.code},
+                    },
+                    error_id=CoffeeAppResponseCodes.ALREADY_USED_CODE.code,
+                    message=CoffeeAppResponseCodes.ALREADY_USED_CODE.detail,
+                )
+            
+            return verification_code
+        except HTTPException:
+            raise
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def get_and_validate_password_reset_code(self, code: str) -> VerificationCodePasswordResetModel:
+        """
+        Obtener y validar código de reset de contraseña
+        """
+        try:
+            reset_code = await self.auth_repository.get_password_reset_code(code)
+            
+            if not reset_code:
+                CoffeeAppHttpResponse.unauthorized_with_code(
+                    error_id=CoffeeAppResponseCodes.INVALID_CODE.code,
+                    message=CoffeeAppResponseCodes.INVALID_CODE.detail,
+                )
+            
+            if not reset_code.is_alive:
+                CoffeeAppHttpResponse.bad_request(
+                    data={
+                        "message": CoffeeAppResponseCodes.ALREADY_USED_CODE.detail,
+                        "providedValue": {"code": reset_code.code},
+                    },
+                    error_id=CoffeeAppResponseCodes.ALREADY_USED_CODE.code,
+                    message=CoffeeAppResponseCodes.ALREADY_USED_CODE.detail,
+                )
+            
+            return reset_code
+        except HTTPException:
+            raise
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def verify_user_with_code(self, code: str) -> dict:
+        """
+        Verificar usuario usando código de verificación
+        Proceso completo: validar código, marcar como usado, verificar usuario
+        """
+        try:
+            # Validar y obtener código
+            verification_code = await self.get_and_validate_verification_code(code)
+            
+            # Marcar código como usado
+            await self.auth_repository.update_verification_code_status(verification_code, is_alive=False)
+            
+            # Verificar usuario
+            await self.auth_repository.update_user_verification(verification_code.user_id, True)
+            
+            return {"message": "User verified successfully"}
+        except HTTPException:
+            raise
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def validate_password_reset_code(self, code: str) -> UUID:
+        """
+        Validar código de reset de contraseña y retornar user_id
+        Marca el código como usado
+        """
+        try:
+            # Validar y obtener código
+            reset_code = await self.get_and_validate_password_reset_code(code)
+            
+            # Marcar código como usado
+            await self.auth_repository.update_verification_code_status(reset_code, is_alive=False)
+            
+            return reset_code.user_id
+        except HTTPException:
+            raise
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def resend_verification_code(self, email: EmailStr) -> dict:
+        """
+        Reenviar código de verificación a un usuario
+        Genera nuevo código y envía por email
+        """
+        try:
+            # Verificar que el usuario existe
+            user = await self.auth_repository.get_user_by_email(email)
+            if not user:
+                CoffeeAppHttpResponse.not_found(
+                    data=None,
+                    error_id=CoffeeAppResponseCodes.UNEXISTING_USER.code,
+                    message=CoffeeAppResponseCodes.UNEXISTING_USER.detail,
+                )
+            
+            # Verificar que el usuario no esté ya verificado
+            if user.is_verified:
+                return {"message": "User already verified"}
+            
+            # Generar nuevo código de verificación
+            verification_code = await self.generate_and_create_verification_code(user.user_id)
+            
+            # Enviar email con el código (importar EmailService si no está)
+            from app.utils.email import EmailService
+            await EmailService.send_verification_email(
+                to_name=user.name.capitalize(),
+                to_email=user.email,
+                verification_code=verification_code.code,
+            )
+            
+            return {"message": "Verification code resent successfully"}
         except HTTPException:
             raise
         except Exception:

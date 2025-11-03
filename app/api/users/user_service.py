@@ -2,6 +2,8 @@ from uuid import UUID
 from datetime import datetime, timezone
 from sqlmodel import Session
 from fastapi import HTTPException
+from sqlmodel import Session
+from fastapi import HTTPException
 
 from app.models.users.user_model import UserModel
 from app.api.users.user_repository import UserRepository

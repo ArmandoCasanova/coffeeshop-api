@@ -1,4 +1,4 @@
-from sqlmodel import Session, select, func
+from sqlmodel import Session
 from uuid import UUID
 from fastapi import HTTPException
 

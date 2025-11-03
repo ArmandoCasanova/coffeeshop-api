@@ -26,6 +26,7 @@ class ProductUpdateSchema(BaseModel):
 class ProductResponseSchema(BaseModel):
     product_id: UUID
     name: str
+    description: Optional[str] = None
     base_price: Decimal
     image_url: str
     is_available: bool

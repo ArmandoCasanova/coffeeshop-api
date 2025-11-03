@@ -10,6 +10,7 @@ class ProductModel(BaseCoffeeAppModel, table=True):
     __tablename__ = "products"
     product_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     name: str
+    description: Optional[str] = Field(default=None, nullable=True)
     base_price: float
     image_url: str
     is_available: bool = Field(default=True)

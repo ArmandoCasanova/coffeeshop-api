@@ -10,3 +10,4 @@ class OrderItemModel(BaseCoffeeAppModel, table=True):
     product_id: UUID = Field(foreign_key="products.product_id")
     quantity: int
     price_at_purchase: float
+    details: Optional[str] = Field(default=None, nullable=True)
