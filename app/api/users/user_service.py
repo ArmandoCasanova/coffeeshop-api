@@ -1,92 +1,94 @@
 from uuid import UUID
 from datetime import datetime, timezone
-
-from sqlmodel import Session, select
+from sqlmodel import Session
+from fastapi import HTTPException
 
 from app.models.users.user_model import UserModel
-from .user_schema import UserCreateSchema
-
-from app.constants.user_constants import UserRoles
-from app.utils.security import get_password_hash
+from app.api.users.user_repository import UserRepository
+from app.api.users.user_schema import UserUpdateSchema
+from app.constants.response_codes import CoffeeAppResponseCodes
+from app.utils.security import get_password_hash, verify_password
 from app.core.http_response import CoffeeAppHttpResponse
 
 
 class UserService:
-    @staticmethod
-    async def create_user(
-        user_data: UserCreateSchema, role: str, session: Session
-    ) -> UserModel:
-        try:
-            hashed_password = get_password_hash(user_data.password)
-            user_dump = user_data.model_dump()
-            new_user = UserModel(
-                role=role,
-                name=user_dump["name"],
-                last_name=user_dump["last_name"],
-                birth_date=user_dump.get("birth_date"),
-                email=user_dump["email"],
-                password=hashed_password,
-                points=user_dump.get("points", 0.0),
-                is_verified=user_dump.get("is_verified", False)
-            )
-            session.add(new_user)
-            session.commit()
-            session.refresh(new_user)
-            return new_user
-        except HTTPException:
-            raise
-        except Exception:
-            CoffeeAppHttpResponse.internal_error()
+    """
+    Servicio para gestión de usuarios (perfil).
+    Maneja lógica de negocio y coordina con UserRepository.
+    """
+    
+    def __init__(self, session: Session):
+        self.user_repository = UserRepository(session)
 
-    @staticmethod
-    async def get_user_by_id(user_id: UUID, session: Session) -> UserModel:
+    async def get_user_profile(self, user_id: UUID) -> UserModel:
+        """Obtener perfil de usuario por ID con validaciones"""
         try:
-            statement = select(UserModel).where(UserModel.user_id == user_id)
-            user = session.exec(statement).first()
+            user = await self.user_repository.get_user_by_id(user_id)
+            
+            if not user:
+                CoffeeAppHttpResponse.not_found(
+                    data=None,
+                    error_id=CoffeeAppResponseCodes.UNEXISTING_USER.code,
+                    message=CoffeeAppResponseCodes.UNEXISTING_USER.detail,
+                )
+            
             return user
         except HTTPException:
             raise
         except Exception:
             CoffeeAppHttpResponse.internal_error()
 
-    @staticmethod
-    async def get_user_by_email(email: str, session: Session) -> UserModel | bool:
+    async def update_user_profile(self, user_id: UUID, user_data: UserUpdateSchema) -> UserModel:
+        """Actualizar perfil de usuario con validaciones"""
         try:
-            statement = select(UserModel).where(UserModel.email == email)
-            user = session.exec(statement).first()
-            return user if user else False
+            # Validar que el usuario existe
+            user = await self.user_repository.get_user_by_id(user_id)
+            if not user:
+                CoffeeAppHttpResponse.not_found(
+                    data=None,
+                    error_id=CoffeeAppResponseCodes.UNEXISTING_USER.code,
+                    message=CoffeeAppResponseCodes.UNEXISTING_USER.detail,
+                )
+            
+            # Preparar datos para actualización
+            update_data = user_data.model_dump(exclude_unset=True)
+            
+            # Actualizar usuario
+            updated_user = await self.user_repository.update_user_profile(user_id, update_data)
+            return updated_user
         except HTTPException:
             raise
         except Exception:
             CoffeeAppHttpResponse.internal_error()
 
-    @staticmethod
-    async def verify_user(user_id: UUID, session: Session):
+    async def change_user_password(self, user_id: UUID, old_password: str, new_password: str) -> dict:
+        """Cambiar contraseña de usuario (requiere contraseña actual)"""
         try:
-            statement = select(UserModel).where(UserModel.user_id == user_id)
-            user = session.exec(statement).first()
-            if user:
-                user.is_verified = True
-                user.updated_at = datetime.now(timezone.utc)
-                session.add(user)
-                session.commit()
+            # Obtener usuario
+            user = await self.user_repository.get_user_by_id(user_id)
+            if not user:
+                CoffeeAppHttpResponse.not_found(
+                    data=None,
+                    error_id=CoffeeAppResponseCodes.UNEXISTING_USER.code,
+                    message=CoffeeAppResponseCodes.UNEXISTING_USER.detail,
+                )
+            
+            # Verificar contraseña actual
+            if not verify_password(old_password, user.password):
+                CoffeeAppHttpResponse.unauthorized_with_code(
+                    error_id=CoffeeAppResponseCodes.INVALID_PASSWORD.code,
+                    message=CoffeeAppResponseCodes.INVALID_PASSWORD.detail,
+                )
+            
+            # Hashear nueva contraseña
+            hashed_password = get_password_hash(new_password)
+            
+            # Actualizar contraseña
+            await self.user_repository.update_user_password(user_id, hashed_password)
+            
+            return {"message": "Password changed successfully"}
         except HTTPException:
             raise
         except Exception:
             CoffeeAppHttpResponse.internal_error()
 
-    @staticmethod
-    async def update_user_password(user_id: UUID, password: str, session: Session):
-        try:
-            hashed_password = get_password_hash(password)
-            statement = select(UserModel).where(UserModel.user_id == user_id)
-            user = session.exec(statement).first()
-            if user:
-                user.password = hashed_password
-                user.updated_at = datetime.now(timezone.utc)
-                session.add(user)
-                session.commit()
-        except HTTPException:
-            raise
-        except Exception:
-            CoffeeAppHttpResponse.internal_error()

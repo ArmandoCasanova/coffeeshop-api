@@ -3,8 +3,12 @@ from uuid import UUID
 from sqlmodel import Session, select
 from fastapi import HTTPException
 from pydantic import EmailStr
+from random import randint
+from typing import Union
 
 from app.models.users.user_model import UserModel
+from app.models.users.verification_code_model import VerificationCodeModel
+from app.models.users.verification_code_password_reset_model import VerificationCodePasswordResetModel
 from app.utils.security import get_password_hash
 from app.core.http_response import CoffeeAppHttpResponse
 
@@ -79,5 +83,81 @@ class AuthRepository:
             statement = select(UserModel).where(UserModel.email == email)
             user = self.session.exec(statement).first()
             return user is not None
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
+    # ==================== VERIFICATION CODE METHODS ====================
+    
+    async def generate_unique_verification_code(self, is_password_reset: bool = False) -> str:
+        """
+        Generar código único de 4 dígitos
+        Args:
+            is_password_reset: Si True, verifica en tabla de password reset, si False en verification codes
+        """
+        try:
+            model = VerificationCodePasswordResetModel if is_password_reset else VerificationCodeModel
+            
+            while True:
+                code_digits = [randint(0, 9) for _ in range(4)]
+                code = "".join(map(str, code_digits))
+                
+                statement = select(model).where(model.code == code)
+                existing_code = self.session.exec(statement).first()
+                
+                if not existing_code:
+                    return code
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def create_verification_code(self, code: str, user_id: UUID) -> VerificationCodeModel:
+        """Crear nuevo código de verificación"""
+        try:
+            new_code = VerificationCodeModel(code=code, user_id=user_id)
+            self.session.add(new_code)
+            self.session.commit()
+            self.session.refresh(new_code)
+            return new_code
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def create_password_reset_code(self, code: str, user_id: UUID) -> VerificationCodePasswordResetModel:
+        """Crear nuevo código para reset de contraseña"""
+        try:
+            new_code = VerificationCodePasswordResetModel(code=code, user_id=user_id)
+            self.session.add(new_code)
+            self.session.commit()
+            self.session.refresh(new_code)
+            return new_code
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def get_verification_code(self, code: str) -> VerificationCodeModel | None:
+        """Obtener código de verificación por código"""
+        try:
+            statement = select(VerificationCodeModel).where(VerificationCodeModel.code == code)
+            return self.session.exec(statement).first()
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def get_password_reset_code(self, code: str) -> VerificationCodePasswordResetModel | None:
+        """Obtener código de reset de contraseña por código"""
+        try:
+            statement = select(VerificationCodePasswordResetModel).where(
+                VerificationCodePasswordResetModel.code == code
+            )
+            return self.session.exec(statement).first()
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def update_verification_code_status(
+        self, 
+        verification_code: Union[VerificationCodeModel, VerificationCodePasswordResetModel],
+        is_alive: bool = False
+    ) -> None:
+        """Actualizar estado del código de verificación"""
+        try:
+            verification_code.is_alive = is_alive
+            self.session.add(verification_code)
+            self.session.commit()
         except Exception:
             CoffeeAppHttpResponse.internal_error()
