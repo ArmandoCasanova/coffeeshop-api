@@ -16,11 +16,7 @@ from app.api.users.user_schema import (
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@router.put(
-    "/me",
-    response_model=UserResponseSchema,
-    summary="Actualizar perfil de usuario autenticado",
-)
+@router.put("/me", response_model=UserResponseSchema)
 async def update_current_user_profile(
     data: UserUpdateSchema,
     session: Session = Depends(get_db),
@@ -41,9 +37,7 @@ async def update_current_user_profile(
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 
-@router.put(
-    "/change-password", summary="Cambiar la contraseña de un usuario autenticado"
-)
+@router.put("/change-password")
 async def change_current_user_password(
     data: ChangePasswordSchema,
     session: Session = Depends(get_db),
