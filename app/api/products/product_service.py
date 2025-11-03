@@ -1,139 +1,191 @@
+from app.core.http_response import CoffeeAppHttpResponse
 from typing import Optional, List
-from sqlmodel import Session, select, func
+from sqlmodel import Session
 from fastapi import HTTPException
 from uuid import UUID
-
-from app.models.catalog.product_model import ProductModel
 from app.api.products.product_schema import ProductCreateSchema, ProductUpdateSchema
+from app.api.products.product_repository import ProductRepository
+from app.core.redis_client import RedisClient
+from app.models.catalog.product_model import ProductModel
+
+# Cache keys and TTL
+POPULAR_PRODUCTS_CACHE_KEY = "products:popular"
+POPULAR_CATEGORIES_CACHE_KEY = "categories:popular"
+USER_FAVORITES_CACHE_PREFIX = "user:favorites:"
+CACHE_TTL = 3600  # 1 hour
 
 
 class ProductService:
-    @staticmethod
-    async def create_product(product_data: ProductCreateSchema, session: Session) -> ProductModel:
-        """Crear un nuevo producto"""
+    def __init__(self, session: Session):
+        self.product_repository = ProductRepository(session)
+
+    async def create_product(self, product_data: ProductCreateSchema) -> object:
         try:
             product_dict = product_data.model_dump()
-            new_product = ProductModel(**product_dict)
-            session.add(new_product)
-            session.commit()
-            session.refresh(new_product)
-            return new_product
+            return await self.product_repository.create_product(product_dict)
         except HTTPException:
-            session.rollback()
             raise
         except Exception as e:
-            session.rollback()
-            raise HTTPException(status_code=500, detail=f"Error creating product: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
 
-    @staticmethod
-    async def get_product_by_id(product_id: UUID, session: Session) -> Optional[ProductModel]:
-        """Obtener producto por ID"""
+    async def get_product_by_id(self, product_id: UUID) -> Optional[object]:
         try:
-            statement = select(ProductModel).where(ProductModel.product_id == product_id)
-            product = session.exec(statement).first()
-            return product
+            return await self.product_repository.get_product_by_id(product_id)
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error fetching product: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
 
-    @staticmethod
     async def get_all_products(
-        session: Session, 
-        skip: int = 0, 
-        limit: int = 10,
-        is_available: Optional[bool] = None
-    ) -> tuple[List[ProductModel], int]:
-        """Obtener todos los productos con paginación"""
+        self, skip: int = 0, limit: int = 10, is_available: Optional[bool] = None
+    ) -> tuple[list, int]:
         try:
-            # Base query
-            query = select(ProductModel)
-            # Filter by availability if specified
-            if is_available is not None:
-                query = query.where(ProductModel.is_available == is_available)
-            # Count total
-            count_query = select(func.count(ProductModel.product_id))
-            if is_available is not None:
-                count_query = count_query.where(ProductModel.is_available == is_available)
-            total = session.exec(count_query).one()
-            # Get paginated results
-            query = query.offset(skip).limit(limit).order_by(ProductModel.name)
-            products = session.exec(query).all()
-            return products, total
-        except HTTPException:
-            raise
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error fetching products: {str(e)}")
-
-    @staticmethod
-    async def update_product(
-        product_id: UUID, 
-        product_data: ProductUpdateSchema, 
-        session: Session
-    ) -> Optional[ProductModel]:
-        """Actualizar un producto"""
-        try:
-            # Get existing product
-            statement = select(ProductModel).where(ProductModel.product_id == product_id)
-            product = session.exec(statement).first()
-            if not product:
-                return None
-            # Update fields
-            update_data = product_data.model_dump(exclude_unset=True)
-            for field, value in update_data.items():
-                setattr(product, field, value)
-            # updated_at se actualiza automáticamente por BaseCoffeeAppModel
-            session.add(product)
-            session.commit()
-            session.refresh(product)
-            return product
-        except HTTPException:
-            session.rollback()
-            raise
-        except Exception as e:
-            session.rollback()
-            raise HTTPException(status_code=500, detail=f"Error updating product: {str(e)}")
-
-    @staticmethod
-    async def delete_product(product_id: UUID, session: Session) -> bool:
-        """Eliminar un producto"""
-        try:
-            statement = select(ProductModel).where(ProductModel.product_id == product_id)
-            product = session.exec(statement).first()
-            if not product:
-                return False
-            session.delete(product)
-            session.commit()
-            return True
-        except HTTPException:
-            session.rollback()
-            raise
-        except Exception as e:
-            session.rollback()
-            raise HTTPException(status_code=500, detail=f"Error deleting product: {str(e)}")
-
-    @staticmethod
-    async def search_products_by_name(
-        name: str, 
-        session: Session, 
-        skip: int = 0, 
-        limit: int = 10
-    ) -> tuple[List[ProductModel], int]:
-        """Buscar productos por nombre"""
-        try:
-            # Search query (case insensitive)
-            search_pattern = f"%{name}%"
-            query = select(ProductModel).where(ProductModel.name.ilike(search_pattern))
-            # Count total
-            count_query = select(func.count(ProductModel.product_id)).where(
-                ProductModel.name.ilike(search_pattern)
+            return await self.product_repository.get_all_products(
+                skip, limit, is_available
             )
-            total = session.exec(count_query).one()
-            # Get paginated results
-            query = query.offset(skip).limit(limit).order_by(ProductModel.name)
-            products = session.exec(query).all()
-            return products, total
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error searching products: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
+
+    async def update_product(
+        self, product_id: UUID, product_data: ProductUpdateSchema
+    ) -> Optional[object]:
+        try:
+            update_data = product_data.model_dump(exclude_unset=True)
+            return await self.product_repository.update_product(product_id, update_data)
+        except HTTPException:
+            raise
+        except Exception as e:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def delete_product(self, product_id: UUID) -> bool:
+        try:
+            return await self.product_repository.delete_product(product_id)
+        except HTTPException:
+            raise
+        except Exception as e:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def search_products_by_name(
+        self, name: str, skip: int = 0, limit: int = 10
+    ) -> tuple[list, int]:
+        try:
+            return await self.product_repository.search_products_by_name(
+                name, skip, limit
+            )
+        except HTTPException:
+            raise
+        except Exception as e:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def get_popular_products(self, limit: int = 10) -> List[ProductModel]:
+        """Get popular products based on sales from last 7 days with Redis caching"""
+        try:
+            # Try cache first
+            cached_data = await RedisClient.get_json(POPULAR_PRODUCTS_CACHE_KEY)
+            if cached_data:
+                product_ids = cached_data.get("product_ids", [])
+                if product_ids:
+                    # Get products by IDs maintaining order
+                    products = self.product_repository.get_products_by_ids(
+                        product_ids, is_available=True
+                    )
+                    # Maintain order from cache
+                    products_dict = {str(p.product_id): p for p in products}
+                    ordered_products = [
+                        products_dict[pid]
+                        for pid in product_ids
+                        if pid in products_dict
+                    ]
+                    return ordered_products[:limit]
+
+            # Get from database
+            products = self.product_repository.get_popular_products(limit=limit, days=7)
+
+            # Cache result
+            if products:
+                product_ids = [str(p.product_id) for p in products]
+                cache_data = {"product_ids": product_ids}
+                await RedisClient.set_json(
+                    POPULAR_PRODUCTS_CACHE_KEY, cache_data, ex=CACHE_TTL
+                )
+
+            return products
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"❌ Error in get_popular_products: {str(e)}")
+            import traceback
+
+            traceback.print_exc()
+            CoffeeAppHttpResponse.internal_error()
+
+    async def get_user_favorite_products(
+        self, user_id: UUID, limit: int = 10
+    ) -> List[ProductModel]:
+        """Get user's favorite products with Redis caching"""
+        try:
+            # Try cache first
+            cache_key = f"{USER_FAVORITES_CACHE_PREFIX}{user_id}"
+            cached_data = await RedisClient.get_json(cache_key)
+            if cached_data:
+                product_ids = cached_data.get("product_ids", [])
+                if product_ids:
+                    products = self.product_repository.get_products_by_ids(
+                        product_ids, is_available=True
+                    )
+                    return products[:limit]
+
+            # Get from database
+            products = self.product_repository.get_user_favorite_products(
+                user_id=user_id, limit=limit
+            )
+
+            # Cache result
+            if products:
+                product_ids = [str(p.product_id) for p in products]
+                cache_data = {"product_ids": product_ids}
+                await RedisClient.set_json(cache_key, cache_data, ex=CACHE_TTL)
+
+            return products
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"❌ Error in get_user_favorite_products: {str(e)}")
+            import traceback
+
+            traceback.print_exc()
+            CoffeeAppHttpResponse.internal_error()
+
+    async def get_popular_categories(self, limit: int = 10) -> List[dict]:
+        """Get popular categories based on sales from last 7 days with Redis caching"""
+        try:
+            # Try cache first
+            cached_data = await RedisClient.get_json(POPULAR_CATEGORIES_CACHE_KEY)
+            if cached_data:
+                categories = cached_data.get("categories", [])
+                if categories:
+                    return categories[:limit]
+
+            # Get from database (synchronous call, no await)
+            categories = self.product_repository.get_popular_categories(
+                limit=limit, days=7
+            )
+
+            # Cache result
+            if categories:
+                cache_data = {"categories": categories}
+                await RedisClient.set_json(
+                    POPULAR_CATEGORIES_CACHE_KEY, cache_data, ex=CACHE_TTL
+                )
+
+            return categories
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"❌ Error in get_popular_categories: {str(e)}")
+            import traceback
+
+            traceback.print_exc()
+            CoffeeAppHttpResponse.internal_error()

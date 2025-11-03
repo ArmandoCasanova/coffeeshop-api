@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from app.core.http_response import CoffeeAppHttpResponse
 from sqlmodel import Session
 from app.core.auth import LoginFormDataDep
 from app.core.database import SessionDep, get_db
@@ -17,8 +18,8 @@ async def signup(data: SignupSchema, session: Session = Depends(get_db)):
         return await controller.signup(data)
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        CoffeeAppHttpResponse.internal_error()
 
 
 @router.post("/signin", response_model=AuthResponseSchema)
@@ -26,12 +27,10 @@ async def signin(data: LoginSchema, session: Session = Depends(get_db)):
     """Iniciar sesión"""
     try:
         controller = AuthController(session)
-        user = await controller.get_current_user_from_login(data.email)
-        controller.verify_user_password(user, data.password)
-        await controller.is_user_verified(user)
-        return await controller.login(user, data.password)
+        return await controller.login(data.email, data.password)
     except HTTPException as e:
         raise e
+        
     except Exception as e:
         raise e
     
@@ -57,5 +56,4 @@ async def verify_user_verification_code(
 
     except Exception as e:
         raise e
-
 
