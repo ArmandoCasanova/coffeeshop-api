@@ -15,9 +15,10 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> UserModel:
         raise HTTPException(status_code=401, detail="Token missing user info")
     # Puedes personalizar la validación aquí si lo necesitas
     user = UserModel(
-        id=user_info["id"],
+        user_id=user_info["id"],
         email=user_info["email"],
         name=user_info["name"],
+        last_name="",  # El token no incluye last_name, pero es requerido
         role=user_info["role"],
     )
     return user
