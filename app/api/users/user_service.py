@@ -5,7 +5,7 @@ from fastapi import HTTPException
 
 from app.models.users.user_model import UserModel
 from app.api.users.user_repository import UserRepository
-from app.api.users.user_schema import UserUpdateSchema
+from app.api.users.user_schema import UserResponseSchema, UserUpdateSchema
 from app.constants.response_codes import CoffeeAppResponseCodes
 from app.utils.security import get_password_hash, verify_password
 from app.core.http_response import CoffeeAppHttpResponse
@@ -23,19 +23,24 @@ class UserService:
     async def get_user_profile(self, user_id: UUID) -> UserModel:
         """Obtener perfil de usuario por ID con validaciones"""
         try:
+
             user = await self.user_repository.get_user_by_id(user_id)
 
             if not user:
-                CoffeeAppHttpResponse.not_found(
-                    data=None,
-                    error_id=CoffeeAppResponseCodes.UNEXISTING_USER.code,
-                    message=CoffeeAppResponseCodes.UNEXISTING_USER.detail,
+                raise HTTPException(
+                    status_code=404,
+                    detail={
+                        "status": 404,
+                        "statusMessage": "User does not exist",
+                        "error": {"code": CoffeeAppResponseCodes.UNEXISTING_USER.code},
+                    },
                 )
 
             return user
         except HTTPException:
             raise
-        except Exception:
+        except Exception as e:
+
             CoffeeAppHttpResponse.internal_error()
 
     async def update_user_profile(
@@ -43,57 +48,65 @@ class UserService:
     ) -> UserModel:
         """Actualizar perfil de usuario con validaciones"""
         try:
-            # Validar que el usuario existe
+
             user = await self.user_repository.get_user_by_id(user_id)
+
             if not user:
-                CoffeeAppHttpResponse.not_found(
-                    data=None,
-                    error_id=CoffeeAppResponseCodes.UNEXISTING_USER.code,
-                    message=CoffeeAppResponseCodes.UNEXISTING_USER.detail,
+                raise HTTPException(
+                    status_code=404,
+                    detail={
+                        "status": 404,
+                        "statusMessage": "User does not exist",
+                        "error": {"code": CoffeeAppResponseCodes.UNEXISTING_USER.code},
+                    },
                 )
 
-            # Preparar datos para actualización
             update_data = user_data.model_dump(exclude_unset=True)
 
-            # Actualizar usuario
             updated_user = await self.user_repository.update_user_profile(
                 user_id, update_data
             )
-            return updated_user
+
+            return UserResponseSchema.from_orm(updated_user)
         except HTTPException:
             raise
-        except Exception:
+        except Exception as e:
+
             CoffeeAppHttpResponse.internal_error()
 
     async def change_user_password(
         self, user_id: UUID, old_password: str, new_password: str
     ) -> dict:
-        """Cambiar contraseña de usuario (requiere contraseña actual)"""
+
         try:
-            # Obtener usuario
+
             user = await self.user_repository.get_user_by_id(user_id)
             if not user:
-                CoffeeAppHttpResponse.not_found(
-                    data=None,
-                    error_id=CoffeeAppResponseCodes.UNEXISTING_USER.code,
-                    message=CoffeeAppResponseCodes.UNEXISTING_USER.detail,
+                raise HTTPException(
+                    status_code=404,
+                    detail={
+                        "status": 404,
+                        "statusMessage": "User does not exist",
+                        "error": {"code": CoffeeAppResponseCodes.UNEXISTING_USER.code},
+                    },
                 )
 
-            # Verificar contraseña actual
             if not verify_password(old_password, user.password):
-                CoffeeAppHttpResponse.unauthorized_with_code(
-                    error_id=CoffeeAppResponseCodes.INVALID_PASSWORD.code,
-                    message=CoffeeAppResponseCodes.INVALID_PASSWORD.detail,
+                raise HTTPException(
+                    status_code=401,
+                    detail={
+                        "status": 401,
+                        "statusMessage": "Invalid password",
+                        "error": {"code": CoffeeAppResponseCodes.INVALID_PASSWORD.code},
+                    },
                 )
 
-            # Hashear nueva contraseña
             hashed_password = get_password_hash(new_password)
 
-            # Actualizar contraseña
             await self.user_repository.update_user_password(user_id, hashed_password)
 
             return {"message": "Password changed successfully"}
         except HTTPException:
             raise
-        except Exception:
+        except Exception as e:
             CoffeeAppHttpResponse.internal_error()

@@ -2,11 +2,7 @@ from app.core.http_response import CoffeeAppHttpResponse
 from uuid import UUID
 from fastapi import HTTPException
 from app.api.users.user_service import UserService
-from app.api.users.user_schema import (
-    UserResponseSchema,
-    UserUpdateSchema,
-    UserPointsResponseSchema,
-)
+from app.api.users.user_schema import UserResponseSchema, UserUpdateSchema
 
 
 class UserController:
@@ -35,14 +31,14 @@ class UserController:
         except Exception as e:
             CoffeeAppHttpResponse.internal_error()
 
-    async def get_user_points(self, user_id: UUID) -> UserPointsResponseSchema:
-        try:
-            user = await self.user_service.get_user_profile(user_id)
-            return UserPointsResponseSchema(user_id=user.user_id, points=user.points)
-        except HTTPException:
-            raise
-        except Exception as e:
-            CoffeeAppHttpResponse.internal_error()
+    # async def get_user_points(self, user_id: UUID) -> UserPointsResponseSchema:
+    #     try:
+    #         user = await self.user_service.get_user_profile(user_id)
+    #         return UserPointsResponseSchema(user_id=user.user_id, points=user.points)
+    #     except HTTPException:
+    #         raise
+    #     except Exception as e:
+    #         CoffeeAppHttpResponse.internal_error()
 
     async def change_user_password(
         self, user_id: UUID, old_password: str, new_password: str
