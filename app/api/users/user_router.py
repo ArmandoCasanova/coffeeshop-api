@@ -23,7 +23,7 @@ async def get_user_profile(
     session: Session = Depends(get_db)
 ):
     """Obtener perfil de usuario por ID"""
-    if str(current_user.id) != str(user_id):
+    if str(current_user.user_id) != str(user_id):
         raise HTTPException(status_code=403, detail="Access denied: can only access own profile")
     controller = UserController(session)
     return await controller.get_user_profile(user_id)
@@ -37,7 +37,7 @@ async def update_user_profile(
     session: Session = Depends(get_db)
 ):
     """Actualizar perfil de usuario"""
-    if str(current_user.id) != str(user_id):
+    if str(current_user.user_id) != str(user_id):
         raise HTTPException(status_code=403, detail="Access denied: can only update own profile")
     controller = UserController(session)
     return await controller.update_user_profile(user_id, user_data)
@@ -50,7 +50,7 @@ async def get_user_points(
     session: Session = Depends(get_db)
 ):
     """Obtener puntos del usuario"""
-    if str(current_user.id) != str(user_id):
+    if str(current_user.user_id) != str(user_id):
         raise HTTPException(status_code=403, detail="Access denied: can only access own points")
     controller = UserController(session)
     return await controller.get_user_points(user_id)
@@ -64,7 +64,7 @@ async def change_user_password(
     session: Session = Depends(get_db)
 ):
     """Cambiar contraseña del usuario"""
-    if str(current_user.id) != str(user_id):
+    if str(current_user.user_id) != str(user_id):
         raise HTTPException(status_code=403, detail="Access denied: can only change own password")
     controller = UserController(session)
     return await controller.change_user_password(
