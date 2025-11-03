@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 from app.core.auth import LoginFormDataDep
-from app.core.database import SessionDep
 from app.core.database import SessionDep, get_db
 from app.api.auth.auth_controller import AuthController
-from app.api.auth.auth_schema import SignupSchema, AuthResponseSchema, LoginSchema
+from app.api.auth.auth_schema import SignupSchema, AuthResponseSchema, LoginSchema, VerificationRequest
+from app.constants.user_constants import VerificationModels
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -34,3 +34,28 @@ async def signin(data: LoginSchema, session: Session = Depends(get_db)):
         raise e
     except Exception as e:
         raise e
+    
+@router.post("/verification-code")
+async def verify_user_verification_code(
+    request: VerificationRequest, session: SessionDep
+):
+    try:
+        auth_controller = AuthController(session=session)
+
+        verification_code = await auth_controller.get_verification_code_by_code(
+            request=request, model=VerificationModels.VERIFICATION_CODE_MODEL
+        )
+
+        auth_controller.verify_is_code_alive(verification_code=verification_code)
+
+        return await auth_controller.verify_code(
+            verification_code_model=verification_code
+        )
+
+    except HTTPException as e:
+        raise e
+
+    except Exception as e:
+        raise e
+
+

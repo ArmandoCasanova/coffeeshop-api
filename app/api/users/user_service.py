@@ -2,11 +2,15 @@ from uuid import UUID
 from datetime import datetime, timezone
 
 from sqlmodel import Session, select
+from random import choice, randint
+from typing import Union
 
 from app.models.users.user_model import UserModel
+from app.models.users.verification_code_model import VerificationCodeModel
+from app.models.users.verification_code_password_reset_model import VerificationCodePasswordResetModel
 from .user_schema import UserCreateSchema
 
-from app.constants.user_constants import UserRoles
+from app.constants.user_constants import VerificationModels
 from app.utils.security import get_password_hash
 from app.core.http_response import CoffeeAppHttpResponse
 
@@ -90,3 +94,85 @@ class UserService:
             raise
         except Exception:
             CoffeeAppHttpResponse.internal_error()
+    
+    @staticmethod
+    async def generate_unique_verification_code(
+        session: Session, model: VerificationModels
+    ) -> str:
+        try:
+            while True:
+                code_digits = [randint(0, 9) for _ in range(4)]
+                code = "".join(map(str, code_digits))
+                if model == "VerificationCodeModel":
+                    existing_code = session.exec(
+                        select(VerificationCodeModel).where(
+                            VerificationCodeModel.code == code
+                        )
+                    ).first()
+                else:
+                    existing_code = session.exec(
+                        select(VerificationCodePasswordResetModel).where(
+                            VerificationCodePasswordResetModel.code == code
+                        )
+                    ).first()
+
+                if not existing_code:
+                    return code
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+    
+    @staticmethod
+    async def create_verification_code(
+        code: str,
+        user_id: UUID,
+        session: Session,
+    ) -> VerificationCodeModel:
+        try:
+            new_code = VerificationCodeModel(code=code, user_id=user_id)
+
+            session.add(new_code)
+            session.commit()
+            session.refresh(new_code)
+
+            return new_code
+        except Exception:
+           CoffeeAppHttpResponse.internal_error()
+
+    @staticmethod
+    async def get_verification_code(
+        code: str, table: VerificationModels, session: Session
+    ) -> VerificationCodeModel:
+        try:
+            if table == VerificationModels.VERIFICATION_CODE_MODEL:
+                statement = select(VerificationCodeModel).where(
+                    VerificationCodeModel.code == code
+                )
+                result = session.exec(statement).first()
+            else:
+                statement = select(VerificationCodePasswordResetModel).where(
+                    VerificationCodePasswordResetModel.code == code
+                )
+
+                result = session.exec(statement).first()
+
+            return result
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
+    @staticmethod
+    async def update_verification_code_status(
+        verification_code: Union[VerificationCodeModel],
+        session: Session,
+    ):
+        try:
+            if isinstance(verification_code, VerificationCodeModel):
+                verification_code.is_alive = False
+                session.add(verification_code)
+                session.commit()
+            else:
+                verification_code.is_alive = False
+                session.add(verification_code)
+                session.commit()
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
