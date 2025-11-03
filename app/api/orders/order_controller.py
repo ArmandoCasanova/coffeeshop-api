@@ -1,102 +1,39 @@
-from sqlmodel import Session, select, func
+from sqlmodel import Session
 from uuid import UUID
 from fastapi import HTTPException
 
-from app.core.http_response import CoffeeAppHttpResponse
-from app.models.orders.order_item_model import (
-    OrderItemModel,
+from .order_service import OrderService
+from .order_schema import (
+    OrderCreateSchema,
+    OrderUpdateStatusSchema,
 )
-
-from app.models.orders.order_model import OrderModel, OrderStatus
-from app.models.users.user_model import UserModel
-from .order_schema import OrderResponseSchema, OrderUpdateStatusSchema
 
 
 class OrderController:
     def __init__(self, session: Session):
         self.session = session
+        self.service = OrderService(session)
 
-    async def get_all_orders(
-        self, page: int, page_size: int, status: OrderStatus | None
-    ):
-        try:
-            query = select(OrderModel, UserModel).join(
-                UserModel, OrderModel.user_id == UserModel.user_id
-            )
+    async def create_order(self, user_id: UUID, order_data: OrderCreateSchema):
+        """Create a new order"""
+        return await self.service.create_order(user_id, order_data)
 
-            if status:
-                query = query.where(OrderModel.status == status)
+    async def get_all_orders(self, page: int, page_size: int, status):
+        """Get all orders with pagination"""
+        return await self.service.get_all_orders(page, page_size, status)
 
-            query = query.order_by(OrderModel.order_date.desc())
+    async def get_user_orders(self, user_id: UUID, page: int, page_size: int):
+        """Get orders for a specific user"""
+        return await self.service.get_user_orders(user_id, page, page_size)
 
-            total_count_query = select(func.count()).select_from(query.subquery())
-            total_count = self.session.exec(total_count_query).one()
-            paginated_query = query.offset((page - 1) * page_size).limit(page_size)
-            results = self.session.exec(paginated_query).all()
-
-            orders_list = []
-            for order, user in results:
-                order_data = order.model_dump()
-                order_data["user"] = user
-                orders_list.append(OrderResponseSchema.model_validate(order_data))
-
-            return {
-                "total": total_count,
-                "page": page,
-                "page_size": page_size,
-                "orders": orders_list,
-            }
-        except HTTPException:
-            raise
-        except Exception as e:
-            CoffeeAppHttpResponse.internal_error()
+    async def get_order_by_id(self, order_id: UUID):
+        """Get a specific order"""
+        return await self.service.get_order_by_id(order_id)
 
     async def update_order_status(self, order_id: UUID, data: OrderUpdateStatusSchema):
-        try:
-            order = self.session.get(OrderModel, order_id)
-            if not order:
-                CoffeeAppHttpResponse.not_found(message="Order not found")
+        """Update order status"""
+        return await self.service.update_order_status(order_id, data)
 
-            order.status = data.status
-            self.session.add(order)
-            self.session.commit()
-            self.session.refresh(order)
-
-            user = self.session.get(UserModel, order.user_id)
-            order_data = order.model_dump()
-            order_data["user"] = user
-            return OrderResponseSchema.model_validate(order_data)
-        except HTTPException:
-            raise
-        except Exception as e:
-            self.session.rollback()
-            CoffeeAppHttpResponse.internal_error()
-
-    async def delete_order(self, order_id: UUID) -> dict:
-        try:
-            order = self.session.get(OrderModel, order_id)
-            if not order:
-                CoffeeAppHttpResponse.not_found(message="Order not found")
-
-            statement = select(OrderItemModel).where(
-                OrderItemModel.order_id == order_id
-            )
-            items = self.session.exec(statement).all()
-
-            for item in items:
-                self.session.delete(item)
-
-            self.session.flush()
-
-            self.session.delete(order)
-
-            self.session.commit()
-
-            return {"message": "Order deleted successfully"}
-
-        except HTTPException:
-            self.session.rollback()
-            raise
-        except Exception as e:
-            self.session.rollback()
-            CoffeeAppHttpResponse.internal_error()
+    async def delete_order(self, order_id: UUID):
+        """Delete an order"""
+        return await self.service.delete_order(order_id)
