@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
-from app.core.http_response import CoffeeAppHttpResponse
 from sqlmodel import Session
-from app.core.auth import LoginFormDataDep
-from app.core.database import SessionDep, get_db
+
+from app.core.http_response import CoffeeAppHttpResponse
+from app.core.database import get_db
 from app.api.auth.auth_controller import AuthController
-from app.api.auth.auth_schema import SignupSchema, AuthResponseSchema, LoginSchema, VerificationRequest
-from app.constants.user_constants import VerificationModels
+from app.api.auth.auth_schema import SignupSchema, AuthResponseSchema, LoginSchema, VerificationRequest, ResendCode
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -28,32 +27,38 @@ async def signin(data: LoginSchema, session: Session = Depends(get_db)):
     try:
         controller = AuthController(session)
         return await controller.login(data.email, data.password)
-    except HTTPException as e:
-        raise e
-        
-    except Exception as e:
-        raise e
-    
+    except HTTPException:
+        raise
+    except Exception:
+        CoffeeAppHttpResponse.internal_error()
+
+
 @router.post("/verification-code")
 async def verify_user_verification_code(
-    request: VerificationRequest, session: SessionDep
+    request: VerificationRequest, 
+    session: Session = Depends(get_db)
 ):
+    """Verificar código de verificación del usuario"""
     try:
-        auth_controller = AuthController(session=session)
+        controller = AuthController(session)
+        return await controller.verify_verification_code(request.code)
+    except HTTPException:
+        raise
+    except Exception:
+        CoffeeAppHttpResponse.internal_error()
 
-        verification_code = await auth_controller.get_verification_code_by_code(
-            request=request, model=VerificationModels.VERIFICATION_CODE_MODEL
-        )
 
-        auth_controller.verify_is_code_alive(verification_code=verification_code)
-
-        return await auth_controller.verify_code(
-            verification_code_model=verification_code
-        )
-
-    except HTTPException as e:
-        raise e
-
-    except Exception as e:
-        raise e
+@router.put("/resend-verification-code")
+async def resend_verification_code(
+    request: ResendCode,
+    session: Session = Depends(get_db)
+):
+    """Reenviar código de verificación al usuario"""
+    try:
+        controller = AuthController(session)
+        return await controller.resend_verification_code(request.email)
+    except HTTPException:
+        raise
+    except Exception:
+        CoffeeAppHttpResponse.internal_error()
 

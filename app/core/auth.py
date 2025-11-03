@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from app.utils.security import decode_token
 
-from app.api.users.user_service import UserService
+from app.api.auth.auth_repository import AuthRepository
 
 from .database import SessionDep
 
@@ -38,11 +38,11 @@ class Oauth2AccessTokenBearer(OAuth2PasswordBearer):
 
         id, email, name, exp = self.get_user_token_data(token_data=token_data)
 
-        user = None
+        # Usar AuthRepository para obtener usuario
+        auth_repository = AuthRepository(session)
+        user = await auth_repository.get_user_by_email(email=email)
 
-        user = await UserService.get_user_by_email(email=email, session=session)
-
-        if not user or user is False:
+        if not user:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Invalid or expired token"
             )

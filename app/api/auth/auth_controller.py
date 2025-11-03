@@ -1,57 +1,38 @@
 from sqlmodel import Session
 from fastapi import HTTPException
-from app.core.http_response import CoffeeAppHttpResponse
 from pydantic import EmailStr
-from app.constants.user_constants import UserRoles, VerificationModels
-from app.models.users.user_model import UserModel
-from app.api.users.user_service import UserService
-from app.api.auth.auth_schema import SignupSchema, AuthResponseSchema, VerificationRequest
-from app.models.users.verification_code_model import VerificationCodeModel
-from app.utils.security import get_user_token, verify_password
+
 from app.core.http_response import CoffeeAppHttpResponse
 from app.constants.response_codes import CoffeeAppResponseCodes
-from app.utils.email import EmailService
-from typing import Union
+from app.api.auth.auth_schema import SignupSchema, AuthResponseSchema
 from app.api.auth.auth_service import AuthService
+from app.utils.email import EmailService
 
 class AuthController:
     def __init__(self, session: Session):
         self.auth_service = AuthService(session)
 
     async def signup(self, data: SignupSchema) -> AuthResponseSchema:
+        """
+        Registro de usuario con generación y envío de código de verificación
+        """
         try:
-          
-            existing_user = await UserService.get_user_by_email(
-                data.email, self.session
-            )
-            if existing_user:
-                CoffeeAppHttpResponse.bad_request(
-                    data=None,
-                    error_id=CoffeeAppResponseCodes.EXISTING_EMAIL.code,
-                    message=CoffeeAppResponseCodes.EXISTING_EMAIL.detail,
-                )
-
-            user = await UserService.create_user(
-                user_data=data, role=UserRoles.CUSTOMER.value, session=self.session
-            )
-
-            new_verification_code = await UserService.generate_unique_verification_code(
-                session=self.session, model=VerificationModels.VERIFICATION_CODE_MODEL
-            )
-
-            verification_code = await UserService.create_verification_code(
-                code=new_verification_code, user_id=user.user_id, session=self.session
-            )
-
+            # Crear usuario (incluye validación de email existente)
+            user = await self.auth_service.signup_user(data)
+            
+            # Generar y crear código de verificación
+            verification_code = await self.auth_service.generate_and_create_verification_code(user.user_id)
+            
+            # Enviar email con código de verificación
             await EmailService.send_verification_email(
                 to_name=user.name.capitalize(),
                 to_email=user.email,
                 verification_code=verification_code.code,
             )
             
-            access_token = get_user_token(user, is_refresh=False)
-            refresh_token = get_user_token(user, is_refresh=True)
-
+            # Generar tokens
+            tokens = self.auth_service.generate_tokens_for_user(user)
+            
             return AuthResponseSchema(
                 user_id=user.user_id,
                 email=user.email,
@@ -62,10 +43,15 @@ class AuthController:
                 refresh_token=tokens["refresh_token"],
                 is_verified=user.is_verified,
             )
-        except HTTPException as e:
-            raise e
+        except HTTPException:
+            raise
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
 
     async def login(self, email: EmailStr, password: str) -> AuthResponseSchema:
+        """
+        Inicio de sesión de usuario
+        """
         try:
             user = await self.auth_service.authenticate_user(email, password)
             tokens = self.auth_service.generate_tokens_for_user(user)
@@ -81,59 +67,30 @@ class AuthController:
             )
         except HTTPException:
             raise
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
     
-    async def get_verification_code_by_code(
-        self, request: VerificationRequest, model=VerificationModels
-    ):
-        verification_code = await UserService.get_verification_code(
-            code=request.code, table=model, session=self.session
-        )
-
-        if not verification_code:
-            CoffeeAppHttpResponse.unauthorized_with_code(
-                error_id=CoffeeAppResponseCodes.INVALID_CODE,
-                message=CoffeeAppResponseCodes.INVALID_CODE,
-            )
-
-        return verification_code
-
-    def verify_is_code_alive(self, verification_code: VerificationCodeModel) -> bool:
-        if not verification_code.is_alive:
-            CoffeeAppHttpResponse.bad_request(
-                data={
-                    "message": CoffeeAppResponseCodes.ALREADY_USED_CODE.detail,
-                    "providedValue": {"code": verification_code.code},
-                },
-                error_id=CoffeeAppResponseCodes.ALREADY_USED_CODE.code,
-            )
-
-        return True
-    
-    async def verify_code(
-        self,
-        verification_code_model: Union[VerificationCodeModel],
-    ):
+    async def verify_verification_code(self, code: str) -> dict:
+        """
+        Verificar código de verificación y activar cuenta de usuario
+        """
         try:
-            if isinstance(verification_code_model, VerificationCodeModel):
-                user_id = verification_code_model.user_id
-
-                await UserService.update_verification_code_status(
-                    verification_code=verification_code_model, session=self.session
-                )
-
-                await UserService.verify_user(user_id=user_id, session=self.session)
-            else:
-                await UserService.update_verification_code_status(
-                    verification_code=verification_code_model, session=self.session
-                )
-
-            return CoffeeAppHttpResponse.no_content()
-
-        except HTTPException as e:
-            raise e
-
-        except Exception as e:
+            result = await self.auth_service.verify_user_with_code(code)
+            return result
+        except HTTPException:
+            raise
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+    
+    async def resend_verification_code(self, email: EmailStr) -> dict:
+        """
+        Reenviar código de verificación al email del usuario
+        """
+        try:
+            result = await self.auth_service.resend_verification_code(email)
+            return result
+        except HTTPException:
+            raise
+        except Exception:
             CoffeeAppHttpResponse.internal_error()
 
