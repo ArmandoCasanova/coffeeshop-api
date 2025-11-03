@@ -10,6 +10,8 @@ from app.utils.regex import Regex
 
 
 from uuid import UUID
+
+
 class UserSchema(BaseModel):
     user_id: UUID
     rol: str

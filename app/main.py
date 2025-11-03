@@ -10,6 +10,7 @@ from app.api.dashboard.dashboard_router import router as dashboard_router
 from app.api.products.product_router import router as product_router
 from app.api.ingredients.ingredient_router import router as ingredient_router
 from app.api.orders.order_router import router as orders_router
+from app.api.users.user_router import router as user_router
 
 # Configuración
 from .core.settings import settings
@@ -65,6 +66,7 @@ app.include_router(ingredient_router, prefix=settings.API_V1, tags=["Ingredients
 app.include_router(dashboard_router, prefix=settings.API_V1, tags=["Dashboard"])
 app.include_router(orders_router, prefix=settings.API_V1, tags=["Orders"])
 app.include_router(category_router, prefix=settings.API_V1, tags=["Categories"])
+app.include_router(user_router, prefix="/api/v1/users", tags=["Users"])
 
 
 # Endpoint raíz de prueba

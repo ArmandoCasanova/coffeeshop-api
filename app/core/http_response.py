@@ -92,8 +92,10 @@ class CoffeeAppHttpResponse(Generic[T]):
 
     @staticmethod
     def not_found(
-        data: Optional[T] = None, error_id: Optional[str] = None
-    , message: Optional[str] = None) -> HTTPException:
+        data: Optional[T] = None,
+        error_id: Optional[str] = None,
+        message: Optional[str] = None,
+    ) -> HTTPException:
         raise HTTPException(
             status_code=HttpStatus.NOT_FOUND,
             detail={
@@ -118,7 +120,9 @@ class CoffeeAppHttpResponse(Generic[T]):
         )
 
     @staticmethod
-    def unauthorized_with_code(error_id: Optional[str] = None, message: Optional[str] = None) -> HTTPException:
+    def unauthorized_with_code(
+        error_id: Optional[str] = None, message: Optional[str] = None
+    ) -> HTTPException:
         """Raise 401 with structured detail and optional error code."""
         raise HTTPException(
             status_code=HttpStatus.UNAUTHORIZED,
@@ -134,8 +138,10 @@ class CoffeeAppHttpResponse(Generic[T]):
 
     @staticmethod
     def forbidden(
-        data: Optional[T] = None, error_id: Optional[str] = None
-    , message: Optional[str] = None) -> HTTPException:
+        data: Optional[T] = None,
+        error_id: Optional[str] = None,
+        message: Optional[str] = None,
+    ) -> HTTPException:
         raise HTTPException(
             status_code=HttpStatus.FORBIDDEN,
             detail={
@@ -159,7 +165,9 @@ class CoffeeAppHttpResponse(Generic[T]):
         )
 
     @staticmethod
-    def bad_request(data: T, error_id: Optional[str] = None, message: Optional[str] = None) -> HTTPException:
+    def bad_request(
+        data: T, error_id: Optional[str] = None, message: Optional[str] = None
+    ) -> HTTPException:
         raise HTTPException(
             status_code=HttpStatus.BAD_REQUEST,
             detail={

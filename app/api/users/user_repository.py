@@ -7,12 +7,13 @@ from app.models.users.user_model import UserModel
 from app.utils.security import get_password_hash
 from app.core.http_response import CoffeeAppHttpResponse
 
+
 class UserRepository:
     """
     Repository para acceso a datos de usuarios (gestión de perfil).
     Solo contiene operaciones CRUD, sin lógica de negocio.
     """
-    
+
     def __init__(self, session: Session):
         self.session = session
 
@@ -30,15 +31,15 @@ class UserRepository:
         try:
             statement = select(UserModel).where(UserModel.user_id == user_id)
             user = self.session.exec(statement).first()
-            
+
             if not user:
                 raise ValueError("User not found")
-            
+
             # Actualizar campos proporcionados
             for field, value in update_data.items():
                 if hasattr(user, field) and value is not None:
                     setattr(user, field, value)
-            
+
             user.updated_at = datetime.now(timezone.utc)
             self.session.add(user)
             self.session.commit()
@@ -54,7 +55,7 @@ class UserRepository:
         try:
             statement = select(UserModel).where(UserModel.user_id == user_id)
             user = self.session.exec(statement).first()
-            
+
             if user:
                 user.password = hashed_password
                 user.updated_at = datetime.now(timezone.utc)
