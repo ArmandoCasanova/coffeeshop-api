@@ -32,7 +32,7 @@ class ProductResponseSchema(BaseModel):
     category_info_json: Dict[str, Any]
     customization_details_json: Dict[str, Any]
     created_at: datetime  # Campo heredado de BaseCoffeeAppModel
-    updated_at: datetime  # Campo heredado de BaseCoffeeAppModel
+    updated_at: Optional[datetime] = None  # Campo heredado de BaseCoffeeAppModel
 
     class Config:
         from_attributes = True
@@ -47,6 +47,7 @@ class ProductListResponseSchema(BaseModel):
 
 class CategoryResponseSchema(BaseModel):
     """Schema for category response including popularity metrics"""
+
     category_id: str
     name: str
     description: str
