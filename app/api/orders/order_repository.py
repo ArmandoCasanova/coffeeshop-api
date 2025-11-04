@@ -2,7 +2,7 @@ from sqlmodel import Session, select, func
 from uuid import UUID
 from typing import Optional, Tuple, List
 
-from app.models.orders.order_model import OrderModel, OrderStatus
+from app.models.orders.order_model import OrderModel, OrderStatus, PaymentType
 from app.models.orders.order_item_model import OrderItemModel
 from app.models.orders.order_item_customization_model import OrderItemCustomizationModel
 from app.models.users.user_model import UserModel
@@ -126,6 +126,19 @@ class OrderRepository:
             return None
 
         order.status = status
+        self.session.add(order)
+        self.session.flush()
+        return order
+
+    async def update_order_payment_type(
+        self, order_id: UUID, payment_type: PaymentType
+    ) -> Optional[OrderModel]:
+        """Update order payment type"""
+        order = self.session.get(OrderModel, order_id)
+        if not order:
+            return None
+
+        order.payment_type = payment_type
         self.session.add(order)
         self.session.flush()
         return order
