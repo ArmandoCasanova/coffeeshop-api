@@ -23,12 +23,12 @@ class AuthController:
             # Generar y crear código de verificación
             verification_code = await self.auth_service.generate_and_create_verification_code(user.user_id)
             
-            # Enviar email con código de verificación
-            await EmailService.send_verification_email(
-                to_name=user.name.capitalize(),
-                to_email=user.email,
-                verification_code=verification_code.code,
-            )
+            # Enviar email con código de verificación (temporalmente desactivado)
+            # await EmailService.send_verification_email(
+            #     to_name=user.name.capitalize(),
+            #     to_email=user.email,
+            #     verification_code=verification_code.code,
+            # )
             
             # Generar tokens
             tokens = self.auth_service.generate_tokens_for_user(user)
