@@ -76,3 +76,11 @@ class PromotionService:
             raise
         except Exception as e:
             CoffeeAppHttpResponse.internal_error()
+    
+    async def validate_promotion_by_code(self, code: str) -> Optional[PromotionModel]:
+        try:
+            return await self.promotion_repository.get_promotion_by_code(code)
+        except HTTPException:
+            raise
+        except Exception as e:
+            CoffeeAppHttpResponse.internal_error()

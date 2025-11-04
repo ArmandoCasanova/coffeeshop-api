@@ -6,6 +6,7 @@ from .order_service import OrderService
 from .order_schema import (
     OrderCreateSchema,
     OrderUpdateStatusSchema,
+    OrderUpdatePaymentTypeSchema,
 )
 
 
@@ -33,6 +34,10 @@ class OrderController:
     async def update_order_status(self, order_id: UUID, data: OrderUpdateStatusSchema):
         """Update order status"""
         return await self.service.update_order_status(order_id, data)
+
+    async def update_order_payment_type(self, order_id: UUID, data: OrderUpdatePaymentTypeSchema):
+        """Update order payment type"""
+        return await self.service.update_order_payment_type(order_id, data)
 
     async def delete_order(self, order_id: UUID):
         """Delete an order"""

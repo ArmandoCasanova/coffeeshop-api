@@ -54,3 +54,15 @@ async def update_promotion(
 async def delete_promotion(promotion_id: UUID, session: Session = Depends(get_db)):
     controller = PromotionController(session)
     return await controller.delete_promotion(promotion_id)
+
+
+@router.post("/validate", response_model=dict)
+async def validate_promotion_code(
+    code_data: dict, session: Session = Depends(get_db)
+):
+    """
+    Valida un código de promoción.
+    Por ahora valida por nombre de promoción (ya que no hay campo 'code' en la DB).
+    """
+    controller = PromotionController(session)
+    return await controller.validate_promotion_code(code_data.get("code", ""))

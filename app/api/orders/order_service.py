@@ -10,6 +10,7 @@ from .order_schema import (
     OrderCreateSchema,
     OrderResponseSchema,
     OrderUpdateStatusSchema,
+    OrderUpdatePaymentTypeSchema,
     OrderItemCreateSchema,
 )
 
@@ -27,6 +28,15 @@ class OrderService:
                 item.price_at_purchase * item.quantity for item in order_data.items
             )
 
+            # Apply promotion discount if provided
+            promotion_discount = 0
+            if order_data.promotion:
+                promotion_discount = order_data.promotion.discount
+                total_amount -= promotion_discount
+
+            # Ensure total is not negative
+            total_amount = max(0, total_amount)
+
             # Create items summary for quick reference
             items_summary = [
                 {
@@ -37,6 +47,16 @@ class OrderService:
                 }
                 for item in order_data.items
             ]
+
+            # Add promotion info to summary if provided
+            if order_data.promotion:
+                items_summary.append({
+                    "promotion": {
+                        "promotion_id": str(order_data.promotion.promotion_id),
+                        "code": order_data.promotion.code,
+                        "discount": order_data.promotion.discount,
+                    }
+                })
 
             # Calculate points earned (1% of total)
             points_earned = total_amount * 0.01
@@ -167,6 +187,28 @@ class OrderService:
         except Exception as e:
             self.session.rollback()
             print(f"Error updating order status: {str(e)}")
+            CoffeeAppHttpResponse.internal_error()
+
+    async def update_order_payment_type(self, order_id: UUID, data: OrderUpdatePaymentTypeSchema):
+        """Update order payment type"""
+        try:
+            order = await self.repository.update_order_payment_type(order_id, data.payment_type)
+            if not order:
+                CoffeeAppHttpResponse.not_found(message="Order not found")
+
+            self.session.commit()
+            self.session.refresh(order)
+
+            user = await self.repository.get_user(order.user_id)
+            order_data = order.model_dump()
+            order_data["user"] = user
+            return OrderResponseSchema.model_validate(order_data)
+        except HTTPException:
+            self.session.rollback()
+            raise
+        except Exception as e:
+            self.session.rollback()
+            print(f"Error updating order payment type: {str(e)}")
             CoffeeAppHttpResponse.internal_error()
 
     async def delete_order(self, order_id: UUID) -> dict:
