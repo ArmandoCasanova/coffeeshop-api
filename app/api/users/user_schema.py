@@ -7,7 +7,7 @@ from pydantic.alias_generators import to_camel
 from app.utils.regex import Regex
 class UserSchema(BaseModel):
     user_id: UUID
-    rol: str
+    role: str
     name: str = Field(min_length=4, max_length=20, pattern=Regex.USER_NAME)
     last_name: str = Field(min_length=2, max_length=30)
     email: EmailStr = Field(max_length=40)
@@ -26,7 +26,7 @@ class UserCreateSchema(BaseModel):
     last_name: str = Field(min_length=2, max_length=30)
     email: EmailStr = Field(max_length=40)
     birth_date: datetime | None = None
-    password: str = Field(min_length=8, max_length=20, pattern=Regex.PASSWORD)
+    password: str = Field(min_length=8, max_length=20)
     confirm_password: str = Field(min_length=8, max_length=20)
 
     @field_validator("password")
@@ -76,9 +76,16 @@ class UserPointsResponseSchema(BaseModel):
 
 
 class ChangePasswordSchema(BaseModel):
-    current_password: str = Field(min_length=8, description="Contraseña actual del usuario")
-    new_password: str = Field(min_length=8, max_length=20, pattern=Regex.PASSWORD, description="Nueva contraseña")
+    model_config = {"populate_by_name": True}
+    
+    current_password: str = Field(description="Contraseña actual del usuario", alias="currentPassword")
+    new_password: str = Field(min_length=8, max_length=20, description="Nueva contraseña", alias="newPassword")
 
-    class Config:
-        alias_generator = to_camel
-        populate_by_name = True
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, password):
+        import re
+        re_for_pw: re.Pattern[str] = re.compile(Regex.PASSWORD)
+        if not re_for_pw.match(password):
+            raise ValueError("La contraseña debe contener al menos una letra minúscula, una mayúscula, un dígito y un carácter especial.")
+        return password

@@ -77,7 +77,7 @@ class UserService:
             if not verify_password(old_password, user.password):
                 CoffeeAppHttpResponse.unauthorized_with_code(
                     error_id=CoffeeAppResponseCodes.INVALID_PASSWORD.code,
-                    message=CoffeeAppResponseCodes.INVALID_PASSWORD.detail,
+                    message="La contraseña actual es incorrecta",
                 )
             
             # Hashear nueva contraseña
