@@ -39,6 +39,10 @@ class OrderController:
         """Update order payment type"""
         return await self.service.update_order_payment_type(order_id, data)
 
+    async def confirm_payment(self, order_id: UUID, user_id: UUID):
+        """Confirm payment and deduct ingredient stock"""
+        return await self.service.confirm_payment(order_id, user_id)
+
     async def delete_order(self, order_id: UUID):
         """Delete an order"""
         return await self.service.delete_order(order_id)

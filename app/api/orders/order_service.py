@@ -211,6 +211,101 @@ class OrderService:
             print(f"Error updating order payment type: {str(e)}")
             CoffeeAppHttpResponse.internal_error()
 
+    async def confirm_payment(self, order_id: UUID, user_id: UUID) -> dict:
+        """
+        Simula confirmación de pago exitoso.
+        Cambia status a 'paid' y descuenta stock de ingredientes.
+        """
+        try:
+            print(f"[CONFIRM_PAYMENT] Starting payment confirmation for order_id={order_id}, user_id={user_id}")
+            
+            # Obtener la orden - el repositorio devuelve (OrderModel, UserModel)
+            result = await self.repository.get_order_by_id(order_id)
+            if not result:
+                CoffeeAppHttpResponse.not_found(message="Order not found")
+            
+            # Desempaquetar la tupla
+            order, user = result
+            
+            print(f"[CONFIRM_PAYMENT] Order found: order.user_id={order.user_id}, order.status={order.status}")
+            
+            # Verificar que la orden pertenece al usuario
+            if str(order.user_id) != str(user_id):
+                raise HTTPException(status_code=403, detail="Access denied: not your order")
+            
+            # Verificar que la orden está en estado pending
+            if order.status != OrderStatus.pending:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Order cannot be paid. Current status: {order.status}"
+                )
+            
+            # Importar el servicio de inventario
+            from app.services.inventory_service import InventoryService
+            inventory_service = InventoryService(self.session)
+            
+            # Preparar items para descuento de stock
+            items_for_stock = []
+            if order.items_summary_json:
+                print(f"[CONFIRM_PAYMENT] items_summary_json: {order.items_summary_json}")
+                for item in order.items_summary_json:
+                    print(f"[CONFIRM_PAYMENT] Processing item: {item}")
+                    items_for_stock.append({
+                        "product_id": item.get("product_id"),
+                        "quantity": item.get("quantity", item.get("qty")),
+                        "customizations": item.get("customizations", {})
+                    })
+            
+            print(f"[CONFIRM_PAYMENT] items_for_stock prepared: {items_for_stock}")
+            
+            # Descontar stock de ingredientes
+            stock_result = await inventory_service.deduct_stock_for_order(items_for_stock)
+            
+            # Actualizar status de la orden a 'paid'
+            order.status = OrderStatus.paid
+            self.session.add(order)
+            self.session.commit()
+            self.session.refresh(order)
+            
+            # Ya tenemos el usuario de la tupla inicial
+            print(f"[CONFIRM_PAYMENT] User details: user_id={user.user_id}, name={user.name}, last_name={user.last_name}")
+            
+            # Preparar datos para el schema de respuesta
+            from app.api.orders.order_schema import UserSimpleSchema
+            print(f"[CONFIRM_PAYMENT] Creating UserSimpleSchema")
+            user_simple = UserSimpleSchema(
+                user_id=user.user_id,
+                name=user.name,
+                last_name=user.last_name
+            )
+            print(f"[CONFIRM_PAYMENT] UserSimpleSchema created successfully")
+            
+            print(f"[CONFIRM_PAYMENT] Dumping order model")
+            order_data = order.model_dump()
+            print(f"[CONFIRM_PAYMENT] Order dumped, adding user")
+            order_data["user"] = user_simple.model_dump()
+            
+            print(f"[CONFIRM_PAYMENT] Validating OrderResponseSchema")
+            order_response = OrderResponseSchema.model_validate(order_data)
+            print(f"[CONFIRM_PAYMENT] OrderResponseSchema validated successfully")
+            
+            return {
+                "success": True,
+                "message": "Payment confirmed successfully",
+                "order": order_response,
+                "inventory_deduction": stock_result
+            }
+            
+        except HTTPException:
+            self.session.rollback()
+            raise
+        except Exception as e:
+            self.session.rollback()
+            print(f"[CONFIRM_PAYMENT] ERROR: {type(e).__name__}: {str(e)}")
+            import traceback
+            print(f"[CONFIRM_PAYMENT] TRACEBACK:\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+
     async def delete_order(self, order_id: UUID) -> dict:
         """Delete an order and all its items"""
         try:

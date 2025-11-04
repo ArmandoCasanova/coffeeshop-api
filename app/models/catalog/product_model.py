@@ -16,4 +16,5 @@ class ProductModel(BaseCoffeeAppModel, table=True):
     is_available: bool = Field(default=True)
     category_info_json: dict = Field(sa_column=Column(JSONB))
     customization_details_json: dict = Field(sa_column=Column(JSONB))
+    ingredients_json: Optional[dict] = Field(default=None, sa_column=Column(JSONB, nullable=True))
     updated_at: Optional[datetime] = Field(default=None, nullable=True)

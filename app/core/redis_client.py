@@ -55,3 +55,13 @@ class RedisClient:
     async def set_json(cls, key: str, value: dict, ex: Optional[int] = None):
         """Set JSON value in Redis with optional expiration"""
         await cls.set(key, json.dumps(value), ex=ex)
+
+    @classmethod
+    async def delete_pattern(cls, pattern: str):
+        """Delete all keys matching a pattern"""
+        client = await cls.get_client()
+        keys = []
+        async for key in client.scan_iter(match=pattern):
+            keys.append(key)
+        if keys:
+            await client.delete(*keys)

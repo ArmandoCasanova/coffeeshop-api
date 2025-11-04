@@ -303,3 +303,20 @@ class AuthService:
             raise
         except Exception:
             CoffeeAppHttpResponse.internal_error()
+
+    async def logout_user(self, user_id: str) -> dict:
+        """
+        Cerrar sesión del usuario y limpiar cache de Redis
+        """
+        try:
+            from app.core.redis_client import RedisClient
+            
+            # Limpiar cache de Redis para este usuario
+            # Patrón para encontrar todas las keys del usuario (products, categories, etc.)
+            await RedisClient.delete_pattern(f"*{user_id}*")
+            
+            return {"message": "Logout successful, cache cleared"}
+        except HTTPException:
+            raise
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()

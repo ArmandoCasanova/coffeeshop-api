@@ -104,6 +104,25 @@ async def update_order_payment_type(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/{order_id}/confirm-payment")
+async def confirm_payment(
+    order_id: UUID,
+    session: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+):
+    """
+    Simula la confirmación de pago exitoso de una pasarela.
+    Cambia el status de la orden a 'paid' y descuenta el stock de ingredientes.
+    """
+    controller = OrderController(session)
+    try:
+        return await controller.confirm_payment(order_id, current_user.user_id)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.delete("/{order_id}")
 async def delete_order(order_id: UUID, session: Session = Depends(get_db)):
     """Delete an order (admin endpoint)"""
