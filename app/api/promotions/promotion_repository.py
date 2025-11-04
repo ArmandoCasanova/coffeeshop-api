@@ -118,3 +118,15 @@ class PromotionRepository:
         except Exception:
             self.session.rollback()
             raise
+    
+    async def get_promotion_by_code(self, code: str) -> Optional[PromotionModel]:
+        try:
+            statement = select(PromotionModel).where(
+                PromotionModel.code == code,
+                PromotionModel.start_date <= datetime.utcnow(),
+                PromotionModel.end_date >= datetime.utcnow()
+            )
+            promotion = self.session.exec(statement).first()
+            return promotion
+        except Exception:
+            raise

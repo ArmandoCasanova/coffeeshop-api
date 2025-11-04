@@ -8,6 +8,7 @@ from app.api.orders.order_schema import (
     OrderCreateSchema,
     OrderListResponseSchema,
     OrderUpdateStatusSchema,
+    OrderUpdatePaymentTypeSchema,
     OrderResponseSchema,
 )
 from app.models.orders.order_model import OrderStatus
@@ -81,6 +82,22 @@ async def update_order_status(
     controller = OrderController(session)
     try:
         return await controller.update_order_status(order_id, status_data)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/{order_id}/payment-type", response_model=OrderResponseSchema)
+async def update_order_payment_type(
+    order_id: UUID,
+    payment_data: OrderUpdatePaymentTypeSchema,
+    session: Session = Depends(get_db),
+):
+    """Update order payment type"""
+    controller = OrderController(session)
+    try:
+        return await controller.update_order_payment_type(order_id, payment_data)
     except HTTPException as e:
         raise e
     except Exception as e:

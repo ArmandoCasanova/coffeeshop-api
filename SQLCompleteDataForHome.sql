@@ -1,22 +1,4 @@
--- =============================================
--- SQL COMPLETO PARA PROBAR HOME CON PRODUCTOS POPULARES Y FAVORITOS
--- Incluye: Usuarios, Productos (15+), Órdenes de últimos 7 días, y Favoritos
--- =============================================
 
--- LIMPIAR DATOS PREVIOS (opcional - comentar si no quieres borrar)
--- TRUNCATE TABLE order_item_customization CASCADE;
--- TRUNCATE TABLE order_item CASCADE;
--- TRUNCATE TABLE orders CASCADE;
--- TRUNCATE TABLE user_favorites CASCADE;
--- TRUNCATE TABLE product_customization_groups CASCADE;
--- TRUNCATE TABLE product_category_link CASCADE;
--- TRUNCATE TABLE product_ingredients CASCADE;
--- TRUNCATE TABLE products CASCADE;
--- TRUNCATE TABLE customization_options CASCADE;
--- TRUNCATE TABLE customization_groups CASCADE;
--- TRUNCATE TABLE product_categories CASCADE;
--- TRUNCATE TABLE ingredients CASCADE;
--- TRUNCATE TABLE users CASCADE;
 
 -- =============================================
 -- 1. USUARIOS (Password para todos: "Test123!")
@@ -300,31 +282,32 @@ INSERT INTO user_favorites (user_id, product_id) VALUES
 
 --INSERT DE RODRIGO DESPLIEGUE
 
+
 INSERT INTO public.promotions
-(promotion_id, discount_type, discount_value, start_date, end_date, created_at, updated_at)
+    (promotion_id, code, discount_type, discount_value, start_date, end_date, created_at, updated_at)
 VALUES
-('a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d', 'percentage', 20.0, '2025-01-01 00:00:00', '2025-01-31 23:59:59', '2025-01-01 10:00:00', '2025-01-01 10:00:00');
+    ('a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d', 'PROMO20', 'percentage', 20.0, '2025-01-01 00:00:00', '2025-01-31 23:59:59', '2025-01-01 10:00:00', '2025-01-01 10:00:00');
 INSERT INTO public.promotions
-(promotion_id, discount_type, discount_value, start_date, end_date, created_at, updated_at)
+    (promotion_id, code, discount_type, discount_value, start_date, end_date, created_at, updated_at)
 VALUES
-('b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e', 'fixed_amount', 10.00, '2026-02-01 00:00:00', '2026-02-14 23:59:59', '2025-11-01 14:30:00', '2025-11-01 14:30:00');
+    ('b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e', 'DIEZMXN', 'fixed_amount', 10.00, '2026-02-01 00:00:00', '2026-02-14 23:59:59', '2025-11-01 14:30:00', '2025-11-01 14:30:00');
 INSERT INTO public.promotions
-(promotion_id, discount_type, discount_value, start_date, end_date, created_at, updated_at)
+    (promotion_id, code, discount_type, discount_value, start_date, end_date, created_at, updated_at)
 VALUES
-('f0a1b2c3-d4e5-4f6a-7b8c-9d0e1f2a3b4c', 'percentage', 25.0, '2025-12-01 00:00:00', '2025-12-01 23:59:59', '2025-11-15 09:00:00', '2025-11-15 09:00:00');
+    ('f0a1b2c3-d4e5-4f6a-7b8c-9d0e1f2a3b4c', 'NAVIDAD25', 'percentage', 25.0, '2025-12-01 00:00:00', '2025-12-01 23:59:59', '2025-11-15 09:00:00', '2025-11-15 09:00:00');
 INSERT INTO public.promotions
-(promotion_id, discount_type, discount_value, start_date, end_date, created_at, updated_at)
+    (promotion_id, code, discount_type, discount_value, start_date, end_date, created_at, updated_at)
 VALUES
-('e1b2c3d4-a5f6-4a7b-8c9d-0e1f2a3b4c5d', 'fixed_amount', 15.00, '2026-03-20 00:00:00', '2026-03-31 23:59:59', '2026-03-01 12:00:00', '2026-03-01 12:00:00');
+    ('e1b2c3d4-a5f6-4a7b-8c9d-0e1f2a3b4c5d', 'QUINCEFIJO', 'fixed_amount', 15.00, '2026-03-20 00:00:00', '2026-03-31 23:59:59', '2026-03-01 12:00:00', '2026-03-01 12:00:00');
 INSERT INTO public.promotions
-(promotion_id, discount_type, discount_value, start_date, end_date, created_at, updated_at)
+    (promotion_id, code, discount_type, discount_value, start_date, end_date, created_at, updated_at)
 VALUES
-('c2d3e4f5-b6a7-4b8c-9d0e-1f2a3b4c5d6e', 'percentage', 10.0, '2024-06-10 00:00:00', '2024-06-17 23:59:59', '2024-06-01 08:00:00', '2024-06-01 08:00:00');
+    ('c2d3e4f5-b6a7-4b8c-9d0e-1f2a3b4c5d6e', 'JUNIO10', 'percentage', 10.0, '2024-06-10 00:00:00', '2024-06-17 23:59:59', '2024-06-01 08:00:00', '2024-06-01 08:00:00');
 -- Promoción faltante para evitar error de FK en product_promotions
 INSERT INTO public.promotions
-(promotion_id, discount_type, discount_value, start_date, end_date, created_at, updated_at)
+    (promotion_id, code, discount_type, discount_value, start_date, end_date, created_at, updated_at)
 VALUES
-('5e7e9ddb-6323-4acf-a80b-17216f5cc63d', 'percentage', 15.0, '2025-11-01 00:00:00', '2025-11-30 23:59:59', '2025-11-01 10:00:00', '2025-11-01 10:00:00');
+    ('5e7e9ddb-6323-4acf-a80b-17216f5cc63d', 'BIENVENIDA', 'percentage', 15.0, '2025-11-01 00:00:00', '2025-11-30 23:59:59', '2025-11-01 10:00:00', '2025-11-01 10:00:00');
 
 INSERT INTO public.product_promotions
 (product_id, promotion_id, created_at, updated_at)
@@ -404,24 +387,3 @@ VALUES
     NOW(),
     NOW()
 );
-
--- =============================================
--- RESUMEN DE DATOS INSERTADOS:
--- =============================================
--- ✅ 5 Usuarios (1 admin, 1 staff, 3 customers)
--- ✅ 20 Productos variados (5 Frappés, 6 Calientes, 4 Panadería, 5 Té/Frías)
--- ✅ 11 Órdenes en los últimos 7 días (incluye órdenes de hoy)
--- ✅ 21 Order Items con ventas distribuidas
--- ✅ 14 Favoritos distribuidos entre 3 usuarios
---
--- PRODUCTOS MÁS VENDIDOS (últimos 7 días):
--- 1. Latte - 6 unidades vendidas
--- 2. Mocha Frappé - 5 unidades vendidas
--- 3. Caramel Frappé - 4 unidades vendidas
--- 4. Cappuccino - 4 unidades vendidas
--- 5. Croissant - 3 unidades vendidas
---
--- Para probar:
--- GET /products/popular/list?limit=10
--- GET /products/favorites/user/10000000-0000-0000-0000-000000000003?limit=10
--- =============================================

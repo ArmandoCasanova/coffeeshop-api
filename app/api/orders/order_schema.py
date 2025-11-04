@@ -43,9 +43,20 @@ class OrderItemCreateSchema(BaseModel):
         populate_by_name = True
 
 
+class PromotionInfoSchema(BaseModel):
+    promotion_id: UUID
+    code: str
+    discount: float
+
+    class Config:
+        alias_generator = to_camel
+        populate_by_name = True
+
+
 class OrderCreateSchema(BaseModel):
     payment_type: PaymentType
     items: List[OrderItemCreateSchema]
+    promotion: Optional[PromotionInfoSchema] = None
 
     class Config:
         alias_generator = to_camel
@@ -80,3 +91,11 @@ class OrderListResponseSchema(BaseModel):
 
 class OrderUpdateStatusSchema(BaseModel):
     status: OrderStatus
+
+
+class OrderUpdatePaymentTypeSchema(BaseModel):
+    payment_type: PaymentType
+
+    class Config:
+        alias_generator = to_camel
+        populate_by_name = True
