@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - .:/app # Allows changes to be reflected without rebuilding the container in development
+      - ./images_data:/app/static/images/categories
     container_name: coffeeapp-fastapi-app
     ports:
       - "8000:8000"
