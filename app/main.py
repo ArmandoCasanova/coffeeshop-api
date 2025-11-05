@@ -13,6 +13,7 @@ from app.api.orders.order_router import router as orders_router
 from app.api.promotions.promotion_router import router as promotion_router
 from app.api.clients.client_router import router as client_router
 from app.api.users.user_router import router as user_router
+from app.api.notifications.notification_router import router as notifications_router
 
 
 # Configuración
@@ -49,7 +50,7 @@ origins = [
 # Middleware CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -72,6 +73,7 @@ app.include_router(category_router, prefix=settings.API_V1, tags=["Categories"])
 app.include_router(promotion_router, prefix=settings.API_V1, tags=["Promotions"])
 app.include_router(client_router, prefix=settings.API_V1, tags=["Clients"])
 app.include_router(user_router, prefix=settings.API_V1, tags=["Users"])
+app.include_router(notifications_router, prefix=settings.API_V1, tags=["Notifications"])
 
 
 # Endpoint raíz de prueba
