@@ -7,10 +7,12 @@ from app.constants.response_codes import CoffeeAppResponseCodes
 from app.api.auth.auth_schema import SignupSchema, AuthResponseSchema
 from app.api.auth.auth_service import AuthService
 from app.utils.email import EmailService
+from app.api.payments.payments_service import PaymentService
 
 class AuthController:
     def __init__(self, session: Session):
         self.auth_service = AuthService(session)
+        self.payment_service = PaymentService(session)
 
     async def signup(self, data: SignupSchema) -> AuthResponseSchema:
         """
@@ -19,7 +21,7 @@ class AuthController:
         try:
             # Crear usuario (incluye validación de email existente)
             user = await self.auth_service.signup_user(data)
-            
+            stripe_customer = self.payment_service.create_stripe_customer(user.user_id)
             # Generar y crear código de verificación
             verification_code = await self.auth_service.generate_and_create_verification_code(user.user_id)
             
