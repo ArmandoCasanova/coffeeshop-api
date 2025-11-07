@@ -15,31 +15,32 @@ class PromotionStatus(str, Enum):
     EXPIRED = "Expirada"
 
 class PromotionCreateSchema(BaseModel):
-    name: str = Field(min_length=1, max_length=100) 
+    code: str = Field(min_length=1, max_length=50) 
     discount_type: DiscountType
     discount_value: Decimal = Field(gt=0)
     start_date: datetime
     end_date: datetime
 
 class PromotionUpdateSchema(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=100) 
+    code: Optional[str] = Field(None, min_length=1, max_length=50) 
     discount_type: Optional[DiscountType] = None
     discount_value: Optional[Decimal] = Field(None, gt=0)
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
 
 class PromotionResponseSchema(BaseModel):
-    promotion_id: UUID
-    name: str 
-    discount_type: DiscountType
-    discount_value: Decimal
-    start_date: datetime
-    end_date: datetime
-    created_at: datetime
-    updated_at: datetime
+    promotion_id: UUID = Field(alias="promotionId")
+    code: Optional[str] = None
+    discount_type: DiscountType = Field(alias="discountType")
+    discount_value: Decimal = Field(alias="discountValue")
+    start_date: datetime = Field(alias="startDate")
+    end_date: datetime = Field(alias="endDate")
+    created_at: datetime = Field(alias="createdAt")
+    updated_at: datetime = Field(alias="updatedAt")
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
 class PromotionListResponseSchema(BaseModel):
     promotions: List[PromotionResponseSchema]
@@ -78,7 +79,10 @@ class ProductPromotionDetailSchema(BaseModel):
     class Config:
         from_attributes = True
         populate_by_name = True 
-
+    @computed_field
+    @property
+    def unique_row_id(self) -> str:
+        return f"{self.product_id}_{self.promotion_id}"
     @computed_field
     @property
     def precio_final(self) -> Decimal:

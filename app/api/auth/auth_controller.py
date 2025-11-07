@@ -57,6 +57,7 @@ class AuthController:
         try:
             user = await self.auth_service.authenticate_user(email, password)
             tokens = self.auth_service.generate_tokens_for_user(user)
+            
             return AuthResponseSchema(
                 user_id=user.user_id,
                 email=user.email,
@@ -90,6 +91,18 @@ class AuthController:
         """
         try:
             result = await self.auth_service.resend_verification_code(email)
+            return result
+        except HTTPException:
+            raise
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+    
+    async def logout(self, user_id: str) -> dict:
+        """
+        Cerrar sesión del usuario y limpiar cache de Redis
+        """
+        try:
+            result = await self.auth_service.logout_user(user_id)
             return result
         except HTTPException:
             raise

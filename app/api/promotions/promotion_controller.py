@@ -94,3 +94,23 @@ class PromotionController:
         except Exception as e:
             print(e)
             CoffeeAppHttpResponse.internal_error()
+    
+    async def validate_promotion_code(self, code: str) -> dict:
+        try:
+            promotion = await self.service.validate_promotion_by_code(code)
+            if not promotion:
+                return {
+                    "valid": False,
+                    "message": "Código de promoción no válido o expirado"
+                }
+            
+            promotion_schema = PromotionResponseSchema.model_validate(promotion)
+            return {
+                "valid": True,
+                "promotion": promotion_schema.model_dump(mode='json', by_alias=True)
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(e)
+            CoffeeAppHttpResponse.internal_error()

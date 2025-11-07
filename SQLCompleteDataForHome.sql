@@ -1,22 +1,4 @@
--- =============================================
--- SQL COMPLETO PARA PROBAR HOME CON PRODUCTOS POPULARES Y FAVORITOS
--- Incluye: Usuarios, Productos (15+), Órdenes de últimos 7 días, y Favoritos
--- =============================================
 
--- LIMPIAR DATOS PREVIOS (opcional - comentar si no quieres borrar)
--- TRUNCATE TABLE order_item_customization CASCADE;
--- TRUNCATE TABLE order_item CASCADE;
--- TRUNCATE TABLE orders CASCADE;
--- TRUNCATE TABLE user_favorites CASCADE;
--- TRUNCATE TABLE product_customization_groups CASCADE;
--- TRUNCATE TABLE product_category_link CASCADE;
--- TRUNCATE TABLE product_ingredients CASCADE;
--- TRUNCATE TABLE products CASCADE;
--- TRUNCATE TABLE customization_options CASCADE;
--- TRUNCATE TABLE customization_groups CASCADE;
--- TRUNCATE TABLE product_categories CASCADE;
--- TRUNCATE TABLE ingredients CASCADE;
--- TRUNCATE TABLE users CASCADE;
 
 -- =============================================
 -- 1. USUARIOS (Password para todos: "Test123!")
@@ -39,96 +21,37 @@ INSERT INTO product_categories (category_id, name, description, created_at, upda
 ('50000000-0000-0000-0000-000000000005', 'Bebidas Frías', 'Bebidas frías sin hielo', NOW(), NOW());
 
 -- =============================================
--- 3. PRODUCTOS (20 productos variados)
--- =============================================
 
--- FRAPPÉS (5 productos)
-INSERT INTO products (product_id, name, base_price, image_url, is_available, category_info_json, customization_details_json, created_at, updated_at) VALUES
-('60000000-0000-0000-0000-000000000001', 'Caramel Frappé', 65.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, 
-'{"category_id": "50000000-0000-0000-0000-000000000001", "category_name": "Frappés"}', 
-'{"sizes": [{"name": "Chico", "price": 0}, {"name": "Mediano", "price": 10}, {"name": "Grande", "price": 15}]}', NOW(), NOW()),
 
-('60000000-0000-0000-0000-000000000002', 'Mocha Frappé', 70.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000001", "category_name": "Frappés"}',
-'{"sizes": [{"name": "Chico", "price": 0}, {"name": "Mediano", "price": 10}, {"name": "Grande", "price": 15}]}', NOW(), NOW()),
+INSERT INTO products (product_id, name, description, base_price, image_url, is_available, category_info_json, customization_details_json, ingredients_json, created_at, updated_at) VALUES
+('60000000-0000-0000-0000-000000000001', 'Caramel Frappé', 'Deliciosa bebida fría con caramelo y hielo frappe', 65.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000001", "category_name": "Frappés"}', '{"sizes": {"group_id": "30000000-0000-0000-0000-000000000001", "system_name": "size", "display_name": "Tamaño", "options": [{"option_id": "40000000-0000-0000-0000-000000000001", "name": "Chico", "extra_cost": 0, "details": "160ml"}, {"option_id": "40000000-0000-0000-0000-000000000002", "name": "Mediano", "extra_cost": 10, "details": "250ml"}, {"option_id": "40000000-0000-0000-0000-000000000003", "name": "Grande", "extra_cost": 15, "details": "310ml"}]}, "extras": {"group_id": "30000000-0000-0000-0000-000000000003", "system_name": "extras", "display_name": "Extras", "options": [{"option_id": "40000000-0000-0000-0000-000000000009", "name": "Extra Crema Batida", "extra_cost": 15, "details": "+50g crema"}]}}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000005", "quantity": 100, "unit": "g"}]}', NOW(), NOW()),
+('60000000-0000-0000-0000-000000000002', 'Mocha Frappé', 'Frappé de chocolate y café con crema batida', 70.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000001", "category_name": "Frappés"}', '{"sizes": {"group_id": "30000000-0000-0000-0000-000000000001", "system_name": "size", "display_name": "Tamaño", "options": [{"option_id": "40000000-0000-0000-0000-000000000001", "name": "Chico", "extra_cost": 0, "details": "160ml"}, {"option_id": "40000000-0000-0000-0000-000000000002", "name": "Mediano", "extra_cost": 10, "details": "250ml"}, {"option_id": "40000000-0000-0000-0000-000000000003", "name": "Grande", "extra_cost": 15, "details": "310ml"}]}, "extras": {"group_id": "30000000-0000-0000-0000-000000000003", "system_name": "extras", "display_name": "Extras", "options": [{"option_id": "40000000-0000-0000-0000-000000000009", "name": "Extra Crema Batida", "extra_cost": 15, "details": "+50g crema"}]}}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000005", "quantity": 100, "unit": "g"}, {"ingredientId": "20000000-0000-0000-0000-000000000006", "quantity": 30, "unit": "ml"}]}', NOW(), NOW()),
+('60000000-0000-0000-0000-000000000003', 'Vanilla Frappé', 'Refrescante frappé de vainilla con hielo', 60.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000001", "category_name": "Frappés"}', '{"sizes": {"group_id": "30000000-0000-0000-0000-000000000001", "system_name": "size", "display_name": "Tamaño", "options": [{"option_id": "40000000-0000-0000-0000-000000000001", "name": "Chico", "extra_cost": 0, "details": "160ml"}, {"option_id": "40000000-0000-0000-0000-000000000002", "name": "Mediano", "extra_cost": 10, "details": "250ml"}, {"option_id": "40000000-0000-0000-0000-000000000003", "name": "Grande", "extra_cost": 15, "details": "310ml"}]}, "extras": {"group_id": "30000000-0000-0000-0000-000000000003", "system_name": "extras", "display_name": "Extras", "options": [{"option_id": "40000000-0000-0000-0000-000000000009", "name": "Extra Crema Batida", "extra_cost": 15, "details": "+50g crema"}]}}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000005", "quantity": 100, "unit": "g"}]}', NOW(), NOW()),
+('60000000-0000-0000-0000-000000000004', 'Strawberry Frappé', 'Frappé de fresa natural con hielo y crema', 68.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000001", "category_name": "Frappés"}', '{"sizes": {"group_id": "30000000-0000-0000-0000-000000000001", "system_name": "size", "display_name": "Tamaño", "options": [{"option_id": "40000000-0000-0000-0000-000000000001", "name": "Chico", "extra_cost": 0, "details": "160ml"}, {"option_id": "40000000-0000-0000-0000-000000000002", "name": "Mediano", "extra_cost": 10, "details": "250ml"}, {"option_id": "40000000-0000-0000-0000-000000000003", "name": "Grande", "extra_cost": 15, "details": "310ml"}]}, "extras": {"group_id": "30000000-0000-0000-0000-000000000003", "system_name": "extras", "display_name": "Extras", "options": [{"option_id": "40000000-0000-0000-0000-000000000009", "name": "Extra Crema Batida", "extra_cost": 15, "details": "+50g crema"}]}}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000005", "quantity": 100, "unit": "g"}]}', NOW(), NOW()),
+('60000000-0000-0000-0000-000000000005', 'Cookies & Cream Frappé', 'Frappé con galletas Oreo trituradas y crema', 75.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000001", "category_name": "Frappés"}', '{"sizes": {"group_id": "30000000-0000-0000-0000-000000000001", "system_name": "size", "display_name": "Tamaño", "options": [{"option_id": "40000000-0000-0000-0000-000000000001", "name": "Chico", "extra_cost": 0, "details": "160ml"}, {"option_id": "40000000-0000-0000-0000-000000000002", "name": "Mediano", "extra_cost": 10, "details": "250ml"}, {"option_id": "40000000-0000-0000-0000-000000000003", "name": "Grande", "extra_cost": 15, "details": "310ml"}]}, "extras": {"group_id": "30000000-0000-0000-0000-000000000003", "system_name": "extras", "display_name": "Extras", "options": [{"option_id": "40000000-0000-0000-0000-000000000009", "name": "Extra Crema Batida", "extra_cost": 15, "details": "+50g crema"}]}}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000005", "quantity": 100, "unit": "g"}]}', NOW(), NOW());
 
-('60000000-0000-0000-0000-000000000003', 'Vanilla Frappé', 60.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000001", "category_name": "Frappés"}',
-'{"sizes": [{"name": "Chico", "price": 0}, {"name": "Mediano", "price": 10}, {"name": "Grande", "price": 15}]}', NOW(), NOW()),
+INSERT INTO products (product_id, name, description, base_price, image_url, is_available, category_info_json, customization_details_json, ingredients_json, created_at, updated_at) VALUES
+('60000000-0000-0000-0000-000000000006', 'Latte', 'Café espresso con leche vaporizada suave', 45.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000002", "category_name": "Bebidas Calientes"}', '{"sizes": {"group_id": "30000000-0000-0000-0000-000000000001", "system_name": "size", "display_name": "Tamaño", "options": [{"option_id": "40000000-0000-0000-0000-000000000001", "name": "Chico", "extra_cost": 0, "details": "160ml"}, {"option_id": "40000000-0000-0000-0000-000000000002", "name": "Mediano", "extra_cost": 8, "details": "250ml"}, {"option_id": "40000000-0000-0000-0000-000000000003", "name": "Grande", "extra_cost": 12, "details": "310ml"}]}, "milk_type": {"group_id": "30000000-0000-0000-0000-000000000002", "system_name": "milk_type", "display_name": "Tipo de Leche", "options": [{"option_id": "40000000-0000-0000-0000-000000000004", "name": "Leche Entera", "extra_cost": 0, "details": "Base"}, {"option_id": "40000000-0000-0000-0000-000000000005", "name": "Leche de Almendras", "extra_cost": 12, "details": "+$12"}, {"option_id": "40000000-0000-0000-0000-000000000006", "name": "Deslactosada", "extra_cost": 8, "details": "+$8"}]}, "coffee_type": {"group_id": "30000000-0000-0000-0000-000000000004", "system_name": "coffee_type", "display_name": "Tipo de Café", "options": [{"option_id": "40000000-0000-0000-0000-000000000007", "name": "Regular", "extra_cost": 0, "details": "Base"}, {"option_id": "40000000-0000-0000-0000-000000000008", "name": "Descafeinado", "extra_cost": 0, "details": "Sin cargo"}]}}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000004", "quantity": 1, "unit": "shot"}, {"ingredientId": "20000000-0000-0000-0000-000000000002", "quantity": 160, "unit": "ml"}]}', NOW(), NOW()),
+('60000000-0000-0000-0000-000000000007', 'Cappuccino', 'Café espresso con leche vaporizada y espuma', 48.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000002", "category_name": "Bebidas Calientes"}', '{"sizes": {"group_id": "30000000-0000-0000-0000-000000000001", "system_name": "size", "display_name": "Tamaño", "options": [{"option_id": "40000000-0000-0000-0000-000000000001", "name": "Chico", "extra_cost": 0, "details": "160ml"}, {"option_id": "40000000-0000-0000-0000-000000000002", "name": "Mediano", "extra_cost": 8, "details": "250ml"}, {"option_id": "40000000-0000-0000-0000-000000000003", "name": "Grande", "extra_cost": 12, "details": "310ml"}]}, "milk_type": {"group_id": "30000000-0000-0000-0000-000000000002", "system_name": "milk_type", "display_name": "Tipo de Leche", "options": [{"option_id": "40000000-0000-0000-0000-000000000004", "name": "Leche Entera", "extra_cost": 0, "details": "Base"}, {"option_id": "40000000-0000-0000-0000-000000000005", "name": "Leche de Almendras", "extra_cost": 12, "details": "+$12"}, {"option_id": "40000000-0000-0000-0000-000000000006", "name": "Deslactosada", "extra_cost": 8, "details": "+$8"}]}}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000004", "quantity": 1, "unit": "shot"}, {"ingredientId": "20000000-0000-0000-0000-000000000002", "quantity": 100, "unit": "ml"}]}', NOW(), NOW()),
+('60000000-0000-0000-0000-000000000008', 'Americano', 'Café espresso diluido en agua caliente', 38.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000002", "category_name": "Bebidas Calientes"}', '{"sizes": {"group_id": "30000000-0000-0000-0000-000000000001", "system_name": "size", "display_name": "Tamaño", "options": [{"option_id": "40000000-0000-0000-0000-000000000001", "name": "Chico", "extra_cost": 0, "details": "160ml"}, {"option_id": "40000000-0000-0000-0000-000000000002", "name": "Mediano", "extra_cost": 8, "details": "250ml"}, {"option_id": "40000000-0000-0000-0000-000000000003", "name": "Grande", "extra_cost": 12, "details": "310ml"}]}, "coffee_type": {"group_id": "30000000-0000-0000-0000-000000000004", "system_name": "coffee_type", "display_name": "Tipo de Café", "options": [{"option_id": "40000000-0000-0000-0000-000000000007", "name": "Regular", "extra_cost": 0, "details": "Base"}, {"option_id": "40000000-0000-0000-0000-000000000008", "name": "Descafeinado", "extra_cost": 0, "details": "Sin cargo"}]}}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000004", "quantity": 2, "unit": "shot"}, {"ingredientId": "20000000-0000-0000-0000-000000000001", "quantity": 100, "unit": "ml"}]}', NOW(), NOW()),
+('60000000-0000-0000-0000-000000000009', 'Espresso', 'Shot concentrado de café espresso', 35.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000002", "category_name": "Bebidas Calientes"}', '{"sizes": {"group_id": "30000000-0000-0000-0000-000000000001", "system_name": "size", "display_name": "Tamaño", "options": [{"option_id": "40000000-0000-0000-0000-000000000001", "name": "Simple", "extra_cost": 0, "details": "1 shot"}, {"option_id": "40000000-0000-0000-0000-000000000002", "name": "Doble", "extra_cost": 10, "details": "2 shots"}]}}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000004", "quantity": 1, "unit": "shot"}]}', NOW(), NOW()),
+('60000000-0000-0000-0000-000000000010', 'Flat White', 'Café espresso con leche vaporizada y microespuma', 52.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000002", "category_name": "Bebidas Calientes"}', '{"sizes": {"group_id": "30000000-0000-0000-0000-000000000001", "system_name": "size", "display_name": "Tamaño", "options": [{"option_id": "40000000-0000-0000-0000-000000000001", "name": "Chico", "extra_cost": 0, "details": "160ml"}, {"option_id": "40000000-0000-0000-0000-000000000002", "name": "Mediano", "extra_cost": 8, "details": "250ml"}, {"option_id": "40000000-0000-0000-0000-000000000003", "name": "Grande", "extra_cost": 12, "details": "310ml"}]}, "milk_type": {"group_id": "30000000-0000-0000-0000-000000000002", "system_name": "milk_type", "display_name": "Tipo de Leche", "options": [{"option_id": "40000000-0000-0000-0000-000000000004", "name": "Leche Entera", "extra_cost": 0, "details": "Base"}, {"option_id": "40000000-0000-0000-0000-000000000005", "name": "Leche de Almendras", "extra_cost": 12, "details": "+$12"}, {"option_id": "40000000-0000-0000-0000-000000000006", "name": "Deslactosada", "extra_cost": 8, "details": "+$8"}]}}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000004", "quantity": 1, "unit": "shot"}, {"ingredientId": "20000000-0000-0000-0000-000000000002", "quantity": 120, "unit": "ml"}]}', NOW(), NOW()),
+('60000000-0000-0000-0000-000000000011', 'Hot Chocolate', 'Bebida caliente de chocolate y leche', 42.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000002", "category_name": "Bebidas Calientes"}', '{"sizes": {"group_id": "30000000-0000-0000-0000-000000000001", "system_name": "size", "display_name": "Tamaño", "options": [{"option_id": "40000000-0000-0000-0000-000000000001", "name": "Chico", "extra_cost": 0, "details": "160ml"}, {"option_id": "40000000-0000-0000-0000-000000000002", "name": "Mediano", "extra_cost": 8, "details": "250ml"}, {"option_id": "40000000-0000-0000-0000-000000000003", "name": "Grande", "extra_cost": 12, "details": "310ml"}]}}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000006", "quantity": 30, "unit": "ml"}, {"ingredientId": "20000000-0000-0000-0000-000000000002", "quantity": 200, "unit": "ml"}]}', NOW(), NOW());
 
-('60000000-0000-0000-0000-000000000004', 'Strawberry Frappé', 68.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000001", "category_name": "Frappés"}',
-'{"sizes": [{"name": "Chico", "price": 0}, {"name": "Mediano", "price": 10}, {"name": "Grande", "price": 15}]}', NOW(), NOW()),
 
-('60000000-0000-0000-0000-000000000005', 'Cookies & Cream Frappé', 75.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000001", "category_name": "Frappés"}',
-'{"sizes": [{"name": "Chico", "price": 0}, {"name": "Mediano", "price": 10}, {"name": "Grande", "price": 15}]}', NOW(), NOW());
+INSERT INTO products (product_id, name, description, base_price, image_url, is_available, category_info_json, customization_details_json, ingredients_json, created_at, updated_at) VALUES
+('60000000-0000-0000-0000-000000000012', 'Croissant', 'Crujiente panecillo francés de mantequilla', 35.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000003", "category_name": "Panadería"}', '{}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000008", "quantity": 1, "unit": "unidad"}]}', NOW(), NOW()),
+('60000000-0000-0000-0000-000000000013', 'Panqué de Plátano', 'Bizcocho húmedo de plátano natural', 40.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000003", "category_name": "Panadería"}', '{}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000008", "quantity": 1, "unit": "unidad"}]}', NOW(), NOW()),
+('60000000-0000-0000-0000-000000000014', 'Muffin de Chocolate', 'Muffin esponjoso con trozos de chocolate', 38.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000003", "category_name": "Panadería"}', '{}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000008", "quantity": 1, "unit": "unidad"}]}', NOW(), NOW()),
+('60000000-0000-0000-0000-000000000015', 'Cookie con Chispas', 'Galleta horneada con chispas de chocolate', 32.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000003", "category_name": "Panadería"}', '{}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000008", "quantity": 1, "unit": "unidad"}]}', NOW(), NOW());
 
--- BEBIDAS CALIENTES (6 productos)
-INSERT INTO products (product_id, name, base_price, image_url, is_available, category_info_json, customization_details_json, created_at, updated_at) VALUES
-('60000000-0000-0000-0000-000000000006', 'Latte', 45.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000002", "category_name": "Bebidas Calientes"}',
-'{"sizes": [{"name": "Chico", "price": 0}, {"name": "Mediano", "price": 8}, {"name": "Grande", "price": 12}]}', NOW(), NOW()),
 
-('60000000-0000-0000-0000-000000000007', 'Cappuccino', 48.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000002", "category_name": "Bebidas Calientes"}',
-'{"sizes": [{"name": "Chico", "price": 0}, {"name": "Mediano", "price": 8}, {"name": "Grande", "price": 12}]}', NOW(), NOW()),
-
-('60000000-0000-0000-0000-000000000008', 'Americano', 38.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000002", "category_name": "Bebidas Calientes"}',
-'{"sizes": [{"name": "Chico", "price": 0}, {"name": "Mediano", "price": 8}, {"name": "Grande", "price": 12}]}', NOW(), NOW()),
-
-('60000000-0000-0000-0000-000000000009', 'Espresso', 35.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000002", "category_name": "Bebidas Calientes"}',
-'{"sizes": [{"name": "Simple", "price": 0}, {"name": "Doble", "price": 10}]}', NOW(), NOW()),
-
-('60000000-0000-0000-0000-000000000010', 'Flat White', 52.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000002", "category_name": "Bebidas Calientes"}',
-'{"sizes": [{"name": "Chico", "price": 0}, {"name": "Mediano", "price": 8}, {"name": "Grande", "price": 12}]}', NOW(), NOW()),
-
-('60000000-0000-0000-0000-000000000011', 'Hot Chocolate', 42.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000002", "category_name": "Bebidas Calientes"}',
-'{"sizes": [{"name": "Chico", "price": 0}, {"name": "Mediano", "price": 8}, {"name": "Grande", "price": 12}]}', NOW(), NOW());
-
--- PANADERÍA (4 productos)
-INSERT INTO products (product_id, name, base_price, image_url, is_available, category_info_json, customization_details_json, created_at, updated_at) VALUES
-('60000000-0000-0000-0000-000000000012', 'Croissant', 35.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000003", "category_name": "Panadería"}',
-'{}', NOW(), NOW()),
-
-('60000000-0000-0000-0000-000000000013', 'Panqué de Plátano', 40.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000003", "category_name": "Panadería"}',
-'{}', NOW(), NOW()),
-
-('60000000-0000-0000-0000-000000000014', 'Muffin de Chocolate', 38.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000003", "category_name": "Panadería"}',
-'{}', NOW(), NOW()),
-
-('60000000-0000-0000-0000-000000000015', 'Cookie con Chispas', 32.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000003", "category_name": "Panadería"}',
-'{}', NOW(), NOW());
-
--- TÉ Y BEBIDAS FRÍAS (5 productos)
-INSERT INTO products (product_id, name, base_price, image_url, is_available, category_info_json, customization_details_json, created_at, updated_at) VALUES
-('60000000-0000-0000-0000-000000000016', 'Green Tea Latte', 50.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000004", "category_name": "Té y Tisanas"}',
-'{"sizes": [{"name": "Chico", "price": 0}, {"name": "Mediano", "price": 8}, {"name": "Grande", "price": 12}]}', NOW(), NOW()),
-
-('60000000-0000-0000-0000-000000000017', 'Chai Latte', 48.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000004", "category_name": "Té y Tisanas"}',
-'{"sizes": [{"name": "Chico", "price": 0}, {"name": "Mediano", "price": 8}, {"name": "Grande", "price": 12}]}', NOW(), NOW()),
-
-('60000000-0000-0000-0000-000000000018', 'Iced Coffee', 40.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000005", "category_name": "Bebidas Frías"}',
-'{"sizes": [{"name": "Chico", "price": 0}, {"name": "Mediano", "price": 8}, {"name": "Grande", "price": 12}]}', NOW(), NOW()),
-
-('60000000-0000-0000-0000-000000000019', 'Cold Brew', 45.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000005", "category_name": "Bebidas Frías"}',
-'{"sizes": [{"name": "Chico", "price": 0}, {"name": "Mediano", "price": 8}, {"name": "Grande", "price": 12}]}', NOW(), NOW()),
-
-('60000000-0000-0000-0000-000000000020', 'Lemonade', 35.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE,
-'{"category_id": "50000000-0000-0000-0000-000000000005", "category_name": "Bebidas Frías"}',
-'{"sizes": [{"name": "Chico", "price": 0}, {"name": "Mediano", "price": 8}, {"name": "Grande", "price": 12}]}', NOW(), NOW());
+INSERT INTO products (product_id, name, description, base_price, image_url, is_available, category_info_json, customization_details_json, ingredients_json, created_at, updated_at) VALUES
+('60000000-0000-0000-0000-000000000016', 'Green Tea Latte', 'Latte de té verde con leche vaporizada', 50.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000004", "category_name": "Té y Tisanas"}', '{"sizes": {"group_id": "30000000-0000-0000-0000-000000000001", "system_name": "size", "display_name": "Tamaño", "options": [{"option_id": "40000000-0000-0000-0000-000000000001", "name": "Chico", "extra_cost": 0, "details": "160ml"}, {"option_id": "40000000-0000-0000-0000-000000000002", "name": "Mediano", "extra_cost": 8, "details": "250ml"}, {"option_id": "40000000-0000-0000-0000-000000000003", "name": "Grande", "extra_cost": 12, "details": "310ml"}]}}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000010", "quantity": 5, "unit": "g"}, {"ingredientId": "20000000-0000-0000-0000-000000000002", "quantity": 200, "unit": "ml"}]}', NOW(), NOW()),
+('60000000-0000-0000-0000-000000000017', 'Chai Latte', 'Bebida especiada de té negro con leche', 48.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000004", "category_name": "Té y Tisanas"}', '{"sizes": {"group_id": "30000000-0000-0000-0000-000000000001", "system_name": "size", "display_name": "Tamaño", "options": [{"option_id": "40000000-0000-0000-0000-000000000001", "name": "Chico", "extra_cost": 0, "details": "160ml"}, {"option_id": "40000000-0000-0000-0000-000000000002", "name": "Mediano", "extra_cost": 8, "details": "250ml"}, {"option_id": "40000000-0000-0000-0000-000000000003", "name": "Grande", "extra_cost": 12, "details": "310ml"}]}}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000010", "quantity": 5, "unit": "g"}, {"ingredientId": "20000000-0000-0000-0000-000000000002", "quantity": 180, "unit": "ml"}]}', NOW(), NOW()),
+('60000000-0000-0000-0000-000000000018', 'Iced Coffee', 'Café frío servido con hielo', 40.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000005", "category_name": "Bebidas Frías"}', '{"sizes": {"group_id": "30000000-0000-0000-0000-000000000001", "system_name": "size", "display_name": "Tamaño", "options": [{"option_id": "40000000-0000-0000-0000-000000000001", "name": "Chico", "extra_cost": 0, "details": "160ml"}, {"option_id": "40000000-0000-0000-0000-000000000002", "name": "Mediano", "extra_cost": 8, "details": "250ml"}, {"option_id": "40000000-0000-0000-0000-000000000003", "name": "Grande", "extra_cost": 12, "details": "310ml"}]}}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000004", "quantity": 2, "unit": "shot"}, {"ingredientId": "20000000-0000-0000-0000-000000000001", "quantity": 150, "unit": "ml"}]}', NOW(), NOW()),
+('60000000-0000-0000-0000-000000000019', 'Cold Brew', 'Café infusionado en frío por varias horas', 45.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000005", "category_name": "Bebidas Frías"}', '{"sizes": {"group_id": "30000000-0000-0000-0000-000000000001", "system_name": "size", "display_name": "Tamaño", "options": [{"option_id": "40000000-0000-0000-0000-000000000001", "name": "Chico", "extra_cost": 0, "details": "160ml"}, {"option_id": "40000000-0000-0000-0000-000000000002", "name": "Mediano", "extra_cost": 8, "details": "250ml"}, {"option_id": "40000000-0000-0000-0000-000000000003", "name": "Grande", "extra_cost": 12, "details": "310ml"}]}}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000004", "quantity": 2, "unit": "shot"}, {"ingredientId": "20000000-0000-0000-0000-000000000001", "quantity": 200, "unit": "ml"}]}', NOW(), NOW()),
+('60000000-0000-0000-0000-000000000020', 'Lemonade', 'Refrescante limonada natural con hielo', 35.00, 'https://images.unsplash.com/photo-1630040995437-80b01c5dd52d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8', TRUE, '{"category_id": "50000000-0000-0000-0000-000000000005", "category_name": "Bebidas Frías"}', '{"sizes": {"group_id": "30000000-0000-0000-0000-000000000001", "system_name": "size", "display_name": "Tamaño", "options": [{"option_id": "40000000-0000-0000-0000-000000000001", "name": "Chico", "extra_cost": 0, "details": "160ml"}, {"option_id": "40000000-0000-0000-0000-000000000002", "name": "Mediano", "extra_cost": 8, "details": "250ml"}, {"option_id": "40000000-0000-0000-0000-000000000003", "name": "Grande", "extra_cost": 12, "details": "310ml"}]}}', '{"ingredients": [{"ingredientId": "20000000-0000-0000-0000-000000000001", "quantity": 250, "unit": "ml"}]}', NOW(), NOW());
 
 -- =============================================
 -- INGREDIENTES (INVENTARIO)
@@ -359,66 +282,32 @@ INSERT INTO user_favorites (user_id, product_id) VALUES
 
 --INSERT DE RODRIGO DESPLIEGUE
 
+
 INSERT INTO public.promotions
-(promotion_id, discount_type, discount_value, start_date, end_date, created_at, updated_at)
+    (promotion_id, code, discount_type, discount_value, start_date, end_date, created_at, updated_at)
 VALUES
-(
-    'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d', 
-    'percentage',
-    20.0,                                  
-    '2025-01-01 00:00:00',
-    '2025-01-31 23:59:59',
-    '2025-01-01 10:00:00',                 
-    '2025-01-01 10:00:00'                  
-);
+    ('a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d', 'PROMO20', 'percentage', 20.0, '2025-01-01 00:00:00', '2025-01-31 23:59:59', '2025-01-01 10:00:00', '2025-01-01 10:00:00');
 INSERT INTO public.promotions
-(promotion_id, discount_type, discount_value, start_date, end_date, created_at, updated_at)
+    (promotion_id, code, discount_type, discount_value, start_date, end_date, created_at, updated_at)
 VALUES
-(
-    'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e',
-    'fixed_amount',
-    10.00,                                 
-    '2026-02-01 00:00:00',
-    '2026-02-14 23:59:59',
-    '2025-11-01 14:30:00',
-    '2025-11-01 14:30:00'
-);
+    ('b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e', 'DIEZMXN', 'fixed_amount', 10.00, '2026-02-01 00:00:00', '2026-02-14 23:59:59', '2025-11-01 14:30:00', '2025-11-01 14:30:00');
 INSERT INTO public.promotions
-(promotion_id, discount_type, discount_value, start_date, end_date, created_at, updated_at)
+    (promotion_id, code, discount_type, discount_value, start_date, end_date, created_at, updated_at)
 VALUES
-(
-    'f0a1b2c3-d4e5-4f6a-7b8c-9d0e1f2a3b4c',
-    'percentage',
-    25.0,                                  
-    '2025-12-01 00:00:00',
-    '2025-12-01 23:59:59',
-    '2025-11-15 09:00:00',
-    '2025-11-15 09:00:00'
-);
+    ('f0a1b2c3-d4e5-4f6a-7b8c-9d0e1f2a3b4c', 'NAVIDAD25', 'percentage', 25.0, '2025-12-01 00:00:00', '2025-12-01 23:59:59', '2025-11-15 09:00:00', '2025-11-15 09:00:00');
 INSERT INTO public.promotions
-(promotion_id, discount_type, discount_value, start_date, end_date, created_at, updated_at)
+    (promotion_id, code, discount_type, discount_value, start_date, end_date, created_at, updated_at)
 VALUES
-(
-    'e1b2c3d4-a5f6-4a7b-8c9d-0e1f2a3b4c5d',
-    'fixed_amount',
-    15.00,                
-    '2026-03-20 00:00:00',
-    '2026-03-31 23:59:59',
-    '2026-03-01 12:00:00',
-    '2026-03-01 12:00:00'
-);
+    ('e1b2c3d4-a5f6-4a7b-8c9d-0e1f2a3b4c5d', 'QUINCEFIJO', 'fixed_amount', 15.00, '2026-03-20 00:00:00', '2026-03-31 23:59:59', '2026-03-01 12:00:00', '2026-03-01 12:00:00');
 INSERT INTO public.promotions
-(promotion_id, discount_type, discount_value, start_date, end_date, created_at, updated_at)
+    (promotion_id, code, discount_type, discount_value, start_date, end_date, created_at, updated_at)
 VALUES
-(
-    'c2d3e4f5-b6a7-4b8c-9d0e-1f2a3b4c5d6e', 
-    'percentage',
-    10.0,                                  
-    '2024-06-10 00:00:00',
-    '2024-06-17 23:59:59',
-    '2024-06-01 08:00:00',
-    '2024-06-01 08:00:00'
-);
+    ('c2d3e4f5-b6a7-4b8c-9d0e-1f2a3b4c5d6e', 'JUNIO10', 'percentage', 10.0, '2024-06-10 00:00:00', '2024-06-17 23:59:59', '2024-06-01 08:00:00', '2024-06-01 08:00:00');
+-- Promoción faltante para evitar error de FK en product_promotions
+INSERT INTO public.promotions
+    (promotion_id, code, discount_type, discount_value, start_date, end_date, created_at, updated_at)
+VALUES
+    ('5e7e9ddb-6323-4acf-a80b-17216f5cc63d', 'BIENVENIDA', 'percentage', 15.0, '2025-11-01 00:00:00', '2025-11-30 23:59:59', '2025-11-01 10:00:00', '2025-11-01 10:00:00');
 
 INSERT INTO public.product_promotions
 (product_id, promotion_id, created_at, updated_at)
@@ -498,24 +387,3 @@ VALUES
     NOW(),
     NOW()
 );
-
--- =============================================
--- RESUMEN DE DATOS INSERTADOS:
--- =============================================
--- ✅ 5 Usuarios (1 admin, 1 staff, 3 customers)
--- ✅ 20 Productos variados (5 Frappés, 6 Calientes, 4 Panadería, 5 Té/Frías)
--- ✅ 11 Órdenes en los últimos 7 días (incluye órdenes de hoy)
--- ✅ 21 Order Items con ventas distribuidas
--- ✅ 14 Favoritos distribuidos entre 3 usuarios
---
--- PRODUCTOS MÁS VENDIDOS (últimos 7 días):
--- 1. Latte - 6 unidades vendidas
--- 2. Mocha Frappé - 5 unidades vendidas
--- 3. Caramel Frappé - 4 unidades vendidas
--- 4. Cappuccino - 4 unidades vendidas
--- 5. Croissant - 3 unidades vendidas
---
--- Para probar:
--- GET /products/popular/list?limit=10
--- GET /products/favorites/user/10000000-0000-0000-0000-000000000003?limit=10
--- =============================================
