@@ -13,6 +13,8 @@ from app.api.orders.order_router import router as orders_router
 from app.api.promotions.promotion_router import router as promotion_router
 from app.api.clients.client_router import router as client_router
 from app.api.users.user_router import router as user_router
+from app.api.reports.report_router import router as report_router
+
 
 
 # Configuración
@@ -22,7 +24,7 @@ from .core.redis_client import RedisClient
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Inicializar Redis
+    # Startup: Inicializar Redispy
     await RedisClient.get_client()
     print("✅ Redis connection established")
     yield
@@ -42,17 +44,22 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-origins = [
-    "http://localhost:5173",
-]
+# --- ESTA VARIABLE NO SE ESTÁ USANDO ---
+# origins = [
+#     "http://localhost:5173",
+# ]
 
 # Middleware CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"], # <-- Estás permitiendo todos los orígenes
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    
+    # --- ¡ESTA ES LA LÍNEA QUE ARREGLA EL PROBLEMA! ---
+    # Esto le da permiso al frontend para leer el nombre del archivo.
+    expose_headers=["Content-Disposition"]
 )
 
 
@@ -72,7 +79,7 @@ app.include_router(category_router, prefix=settings.API_V1, tags=["Categories"])
 app.include_router(promotion_router, prefix=settings.API_V1, tags=["Promotions"])
 app.include_router(client_router, prefix=settings.API_V1, tags=["Clients"])
 app.include_router(user_router, prefix=settings.API_V1, tags=["Users"])
-
+app.include_router(report_router, prefix=settings.API_V1, tags=["Reports"])
 
 # Endpoint raíz de prueba
 @app.get("/")
