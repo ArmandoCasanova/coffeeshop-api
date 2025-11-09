@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 # Routers
 from app.api.auth.auth_router import router as auth_router
-from app.api.categories.category_router import category_router
+from app.api.categories.category_router import router as category_router
 from app.api.dashboard.dashboard_router import router as dashboard_router
 from app.api.products.product_router import router as product_router
 from app.api.ingredients.ingredient_router import router as ingredient_router
