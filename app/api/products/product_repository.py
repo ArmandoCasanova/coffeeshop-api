@@ -130,10 +130,8 @@ class ProductRepository:
             List of ProductModel ordered by popularity (most sold first)
         """
         try:
-            # Calculate the date threshold
             date_threshold = datetime.utcnow() - timedelta(days=days)
 
-            # Query to get product_ids ordered by total quantity sold
             subquery = (
                 select(
                     OrderItemModel.product_id,
@@ -147,21 +145,18 @@ class ProductRepository:
                 .limit(limit)
             )
 
-            # Execute the subquery to get product_ids
             result = self.session.exec(subquery).all()
             product_ids = [row[0] for row in result]
 
             if not product_ids:
                 return []
 
-            # Get the full product details maintaining the order
             products_query = select(ProductModel).where(
                 ProductModel.product_id.in_(product_ids),
                 ProductModel.is_available == True,
             )
             products = self.session.exec(products_query).all()
 
-            # Sort products based on the order of product_ids
             product_dict = {p.product_id: p for p in products}
             sorted_products = [
                 product_dict[pid] for pid in product_ids if pid in product_dict
@@ -188,7 +183,6 @@ class ProductRepository:
             if not product_ids:
                 return []
 
-            # Convert string UUIDs to UUID objects if needed
             uuid_list = [
                 UUID(pid) if isinstance(pid, str) else pid for pid in product_ids
             ]
@@ -248,10 +242,8 @@ class ProductRepository:
             List of dictionaries with category info and sales count
         """
         try:
-            # Calculate the date threshold
             date_threshold = datetime.utcnow() - timedelta(days=days)
 
-            # Query to get categories ordered by total sales
             query_with_sales = (
                 select(
                     ProductCategoryModel.category_id,
@@ -286,7 +278,6 @@ class ProductRepository:
 
             result_with_sales = self.session.exec(query_with_sales).all()
 
-            # Convert to list of dictionaries
             categories = []
             category_ids_with_sales = set()
 
@@ -302,11 +293,10 @@ class ProductRepository:
                 )
                 category_ids_with_sales.add(row[0])
 
-            # If we have fewer than limit categories, get categories without sales
             if len(categories) < limit:
                 remaining_limit = limit - len(categories)
 
-                # Query to get all other categories (without sales in the period)
+
                 query_without_sales = (
                     select(
                         ProductCategoryModel.category_id,
@@ -333,8 +323,6 @@ class ProductRepository:
                             "total_sales": 0,
                         }
                     )
-
-            # Return only up to limit
             return categories[:limit]
         except Exception:
             raise

@@ -40,12 +40,10 @@ class PromotionRepository:
         uniendo las tablas products, promotions y product_promotions.
         """
         try:
-            # 1. Definimos la consulta principal con JOIN y campos específicos
-            # Pydantic (con from_attributes=True) mapeará esto al esquema
             query = (
                 select(
                     ProductModel.product_id,
-                    ProductModel.base_price, # Mapeado a 'precio' por el alias del esquema
+                    ProductModel.base_price, 
                     PromotionModel.promotion_id,
                     PromotionModel.discount_type,
                     PromotionModel.discount_value,
@@ -63,15 +61,11 @@ class PromotionRepository:
                 .order_by(ProductModel.product_id, PromotionModel.start_date)
             )
 
-            # 2. Definimos la consulta de conteo total
-            # Contamos sobre la tabla de unión (product_promotions)
             total_query = select(func.count(ProductPromotionModel.product_id))
 
-            # 3. Ejecutamos ambas consultas
             total = self.session.exec(total_query).one()
             results = self.session.exec(query.offset(skip).limit(limit)).all()
             
-            # 'results' es una lista de Objetos 'Row' que Pydantic puede validar
             return list(results), total
         except Exception:
             self.session.rollback()

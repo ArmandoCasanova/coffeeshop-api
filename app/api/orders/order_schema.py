@@ -65,6 +65,7 @@ class OrderCreateSchema(BaseModel):
 
 class OrderResponseSchema(BaseModel):
     order_id: UUID
+    folio: Optional[str] = None
     user: UserSimpleSchema
     order_date: datetime
     status: OrderStatus
