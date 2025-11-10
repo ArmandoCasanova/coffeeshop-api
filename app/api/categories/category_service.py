@@ -10,7 +10,6 @@ class CategoryService:
     async def get_all_categories(self):
         try:
             categories = await self.repository.get_all_categories()
-            # Convertir los modelos antes de pasarlos al wrapper
             categories_dicts = [c.model_dump() for c in categories]
             return categories_dicts
         except Exception as e:

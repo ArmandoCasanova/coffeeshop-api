@@ -13,5 +13,4 @@ async def get_all_categories(session: Session = Depends(get_db)):
     """
     controller = CategoryController(session)
     categories = await controller.get_all_categories()
-    # Ya vienen como dicts desde el service, no hacer model_dump de nuevo
     return categories

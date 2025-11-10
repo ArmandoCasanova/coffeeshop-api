@@ -56,7 +56,6 @@ class OrderRepository:
         self.session.add(order_item)
         self.session.flush()
 
-        # Add customizations
         for customization in customizations:
             item_customization = OrderItemCustomizationModel(
                 order_item_id=order_item.order_item_id,
@@ -157,12 +156,10 @@ class OrderRepository:
         if not order:
             return False
 
-        # Delete order items and their customizations (cascade should handle this)
         statement = select(OrderItemModel).where(OrderItemModel.order_id == order_id)
         items = self.session.exec(statement).all()
 
         for item in items:
-            # Delete customizations first
             customization_statement = select(OrderItemCustomizationModel).where(
                 OrderItemCustomizationModel.order_item_id == item.order_item_id
             )

@@ -172,7 +172,6 @@ class ProductController:
             categories = await self.service.get_popular_categories(limit=limit)
             logger.info(f"✅ Controller: Got {len(categories)} categories from service")
 
-            # Convert dict to schema
             category_list = [
                 CategoryResponseSchema(**category) for category in categories
             ]

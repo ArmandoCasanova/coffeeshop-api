@@ -32,8 +32,8 @@ class ProductResponseSchema(BaseModel):
     is_available: bool
     category_info_json: Dict[str, Any]
     customization_details_json: Dict[str, Any]
-    created_at: datetime  # Campo heredado de BaseCoffeeAppModel
-    updated_at: Optional[datetime] = None  # Campo heredado de BaseCoffeeAppModel
+    created_at: datetime  
+    updated_at: Optional[datetime] = None 
 
     class Config:
         from_attributes = True

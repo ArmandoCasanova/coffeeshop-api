@@ -38,31 +38,25 @@ class InventoryService:
         ingredients_to_deduct = {}
         insufficient_stock = []
         
-        # 1. Calcular total de ingredientes necesarios
+
         for item in order_items:
-            # Validar que product_id existe y no está vacío
             if not item.get("product_id"):
-                print(f"[INVENTORY] Skipping item without product_id: {item}")
                 continue
             
             try:
                 product_id = UUID(item["product_id"])
-            except (ValueError, TypeError) as e:
-                print(f"[INVENTORY] Invalid product_id: {item.get('product_id')}, error: {e}")
+            except (ValueError, TypeError):
                 continue
             
             quantity = item["quantity"]
             
-            # Obtener producto con sus ingredientes
             product = self.session.get(ProductModel, product_id)
             if not product:
                 continue
             
-            # Si el producto no tiene ingredientes definidos, continuar
             if not product.ingredients_json or "ingredients" not in product.ingredients_json:
                 continue
             
-            # Acumular ingredientes
             for ingredient_data in product.ingredients_json["ingredients"]:
                 ingredient_id = UUID(ingredient_data["ingredientId"])
                 ingredient_quantity = ingredient_data["quantity"]
@@ -73,7 +67,6 @@ class InventoryService:
                 
                 ingredients_to_deduct[ingredient_id] += total_needed
         
-        # 2. Verificar stock disponible
         for ingredient_id, quantity_needed in ingredients_to_deduct.items():
             ingredient = self.session.get(IngredientModel, ingredient_id)
             if not ingredient:
@@ -86,7 +79,6 @@ class InventoryService:
                     "needed": quantity_needed
                 })
         
-        # 3. Si hay stock insuficiente, lanzar error
         if insufficient_stock:
             raise HTTPException(
                 status_code=400,
@@ -96,7 +88,6 @@ class InventoryService:
                 }
             )
         
-        # 4. Realizar descuento de stock
         deducted_summary = []
         for ingredient_id, quantity_to_deduct in ingredients_to_deduct.items():
             ingredient = self.session.get(IngredientModel, ingredient_id)
