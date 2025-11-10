@@ -23,13 +23,12 @@ from .core.redis_client import RedisClient
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Inicializar Redis
     await RedisClient.get_client()
-    print("✅ Redis connection established")
+    print("Redis connection established")
     yield
-    # Shutdown: Cerrar conexión Redis
+
     await RedisClient.close()
-    print("❌ Redis connection closed")
+    print("Redis connection closed")
 
 
 # Crear instancia de FastAPI con la configuración del proyecto
@@ -50,7 +49,7 @@ origins = [
 # Middleware CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
