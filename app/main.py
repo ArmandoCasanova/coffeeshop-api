@@ -5,12 +5,13 @@ from contextlib import asynccontextmanager
 
 # Routers
 from app.api.auth.auth_router import router as auth_router
-from app.api.categories.category_router import category_router
+from app.api.categories.category_router import router as category_router
 from app.api.dashboard.dashboard_router import router as dashboard_router
 from app.api.products.product_router import router as product_router
 from app.api.ingredients.ingredient_router import router as ingredient_router
 from app.api.orders.order_router import router as orders_router
 from app.api.promotions.promotion_router import router as promotion_router
+from app.api.payments.payments_router import router as payments_router
 from app.api.clients.client_router import router as client_router
 from app.api.users.user_router import router as user_router
 from app.api.notifications.notification_router import router as notifications_router
@@ -71,6 +72,7 @@ app.include_router(dashboard_router, prefix=settings.API_V1, tags=["Dashboard"])
 app.include_router(orders_router, prefix=settings.API_V1, tags=["Orders"])
 app.include_router(category_router, prefix=settings.API_V1, tags=["Categories"])
 app.include_router(promotion_router, prefix=settings.API_V1, tags=["Promotions"])
+app.include_router(payments_router, prefix=settings.API_V1, tags=["Payments"])
 app.include_router(client_router, prefix=settings.API_V1, tags=["Clients"])
 app.include_router(user_router, prefix=settings.API_V1, tags=["Users"])
 app.include_router(notifications_router, prefix=settings.API_V1, tags=["Notifications"])
