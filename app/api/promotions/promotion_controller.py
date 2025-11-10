@@ -5,7 +5,6 @@ from fastapi import HTTPException
 from uuid import UUID
 import logging
 
-# Importamos el servicio y esquemas de promoción
 from app.api.promotions.promotion_service import PromotionService
 from app.api.promotions.promotion_schmena import (
     ProductPromotionDetailSchema,

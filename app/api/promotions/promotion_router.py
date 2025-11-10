@@ -9,8 +9,7 @@ from app.api.promotions.promotion_schmena import (
     PromotionCreateSchema,
     PromotionUpdateSchema,
     PromotionResponseSchema,
-    # --- CAMBIO ---
-    ProductPromotionListResponseSchema, # Usamos el nuevo esquema de lista
+    ProductPromotionListResponseSchema,
 )
 
 router = APIRouter(prefix="/promotions", tags=["Promotions"])
