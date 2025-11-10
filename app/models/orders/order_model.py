@@ -20,6 +20,7 @@ class PaymentType(str, enum.Enum):
 class OrderModel(BaseCoffeeAppModel, table=True):
     __tablename__ = "orders"
     order_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
+    folio: Optional[str] = Field(default=None, index=True, unique=True, max_length=10)
     user_id: UUID = Field(foreign_key="users.user_id")
     order_date: datetime = Field(default_factory=datetime.utcnow)
     status: OrderStatus = Field(sa_column=Column(Enum(OrderStatus), nullable=False))

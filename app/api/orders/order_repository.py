@@ -16,6 +16,7 @@ class OrderRepository:
     async def create_order(
         self,
         user_id: UUID,
+        folio: str,
         total_amount: float,
         points_earned: float,
         payment_type,
@@ -24,6 +25,7 @@ class OrderRepository:
         """Create a new order"""
         order = OrderModel(
             user_id=user_id,
+            folio=folio,
             status=OrderStatus.pending,
             total_amount=total_amount,
             points_earned=points_earned,
@@ -114,6 +116,12 @@ class OrderRepository:
             .join(UserModel, OrderModel.user_id == UserModel.user_id)
             .where(OrderModel.order_id == order_id)
         )
+        result = self.session.exec(query).first()
+        return result
+
+    async def get_order_by_folio(self, folio: str) -> Optional[OrderModel]:
+        """Get an order by folio"""
+        query = select(OrderModel).where(OrderModel.folio == folio)
         result = self.session.exec(query).first()
         return result
 

@@ -10,14 +10,16 @@ class NotificationRepository:
         self.session = session
 
     async def create_notification(self, notification_data: dict) -> NotificationModel:
+        """
+        Create a notification record.
+        Note: Does NOT commit - caller is responsible for commit/rollback.
+        """
         try:
             new_notif = NotificationModel(**notification_data)
             self.session.add(new_notif)
-            self.session.commit()
-            self.session.refresh(new_notif)
+            # No commit here - let the service/caller handle transaction
             return new_notif
         except Exception:
-            self.session.rollback()
             raise
 
     async def get_notifications_by_user(
@@ -36,40 +38,49 @@ class NotificationRepository:
             raise
 
     async def mark_read(self, ids: list, user_id: UUID) -> int:
+        """Mark notifications as read. Does NOT commit."""
         try:
-            statement = select(NotificationModel).where(NotificationModel.notification_id.in_(ids), NotificationModel.user_id == user_id)
+            statement = select(NotificationModel).where(
+                NotificationModel.notification_id.in_(ids), 
+                NotificationModel.user_id == user_id
+            )
             notifs = self.session.exec(statement).all()
             for n in notifs:
                 n.is_read = True
                 self.session.add(n)
-            self.session.commit()
+            # No commit - let service handle it
             return len(notifs)
         except Exception:
-            self.session.rollback()
             raise
 
     async def mark_all_read(self, user_id: UUID) -> int:
+        """Mark all user notifications as read. Does NOT commit."""
         try:
-            statement = select(NotificationModel).where(NotificationModel.user_id == user_id, NotificationModel.is_read == False)
+            statement = select(NotificationModel).where(
+                NotificationModel.user_id == user_id, 
+                NotificationModel.is_read == False
+            )
             notifs = self.session.exec(statement).all()
             for n in notifs:
                 n.is_read = True
                 self.session.add(n)
-            self.session.commit()
+            # No commit - let service handle it
             return len(notifs)
         except Exception:
-            self.session.rollback()
             raise
 
     async def delete_notification(self, notification_id: UUID, user_id: UUID) -> bool:
+        """Delete a notification. Does NOT commit."""
         try:
-            statement = select(NotificationModel).where(NotificationModel.notification_id == notification_id, NotificationModel.user_id == user_id)
+            statement = select(NotificationModel).where(
+                NotificationModel.notification_id == notification_id, 
+                NotificationModel.user_id == user_id
+            )
             notif = self.session.exec(statement).first()
             if not notif:
                 return False
             self.session.delete(notif)
-            self.session.commit()
+            # No commit - let service handle it
             return True
         except Exception:
-            self.session.rollback()
             raise

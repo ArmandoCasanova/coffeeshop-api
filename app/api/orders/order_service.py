@@ -2,6 +2,8 @@ from sqlmodel import Session
 from uuid import UUID
 from fastapi import HTTPException
 from datetime import datetime
+import random
+import string
 
 from app.core.http_response import CoffeeAppHttpResponse
 from app.models.orders.order_model import OrderModel, OrderStatus, PaymentType
@@ -20,9 +22,32 @@ class OrderService:
         self.session = session
         self.repository = OrderRepository(session)
 
+    def _generate_folio(self) -> str:
+        """Generate a unique 8-character folio (e.g., CF240A3B)"""
+        # Format: CF + 6 random alphanumeric characters
+        chars = string.ascii_uppercase + string.digits
+        random_part = ''.join(random.choices(chars, k=6))
+        return f"CF{random_part}"
+
+    async def _ensure_unique_folio(self) -> str:
+        """Generate a folio and ensure it's unique"""
+        max_attempts = 10
+        for _ in range(max_attempts):
+            folio = self._generate_folio()
+            # Check if folio exists
+            existing = await self.repository.get_order_by_folio(folio)
+            if not existing:
+                return folio
+        # Fallback: use timestamp-based folio
+        timestamp = datetime.now().strftime("%H%M%S")
+        return f"CF{timestamp}"
+
     async def create_order(self, user_id: UUID, order_data: OrderCreateSchema):
         """Create a new order with items and customizations"""
         try:
+            # Generate unique folio
+            folio = await self._ensure_unique_folio()
+
             # Calculate total amount from items
             total_amount = sum(
                 item.price_at_purchase * item.quantity for item in order_data.items
@@ -64,6 +89,7 @@ class OrderService:
             # Create order
             order = await self.repository.create_order(
                 user_id=user_id,
+                folio=folio,
                 total_amount=total_amount,
                 points_earned=points_earned,
                 payment_type=order_data.payment_type,
@@ -215,6 +241,7 @@ class OrderService:
         """
         Simula confirmación de pago exitoso.
         Cambia status a 'paid' y descuenta stock de ingredientes.
+        Envía notificación de compra exitosa (sin bloquear el flujo).
         """
         try:
             print(f"[CONFIRM_PAYMENT] Starting payment confirmation for order_id={order_id}, user_id={user_id}")
@@ -267,26 +294,62 @@ class OrderService:
             self.session.commit()
             self.session.refresh(order)
             
+            print(f"[CONFIRM_PAYMENT] Payment confirmed successfully, order status updated to 'paid'")
+            
+            # ========== CRITICAL: Send notification AFTER payment success ==========
+            # This runs in a separate try-except to prevent notification errors from breaking the payment
+            try:
+                from app.api.notifications.notification_service import NotificationService
+                notification_service = NotificationService(self.session)
+                
+                # Create success notification with folio and total
+                await notification_service.create_notification_safe(
+                    user_id=user_id,
+                    notification_type="payment_successful",
+                    title="¡Compra exitosa!",
+                    body=f"Orden {order.folio} confirmada. Total: ${order.total_amount:.2f} MXN. ¡Ganaste {order.points_earned:.0f} puntos!",
+                    data={
+                        "order_id": str(order.order_id),
+                        "folio": order.folio,
+                        "total_amount": order.total_amount,
+                        "points_earned": order.points_earned,
+                    }
+                )
+                print(f"[CONFIRM_PAYMENT] Notification sent successfully")
+            except Exception as notif_error:
+                # Log notification error but DO NOT fail the payment
+                print(f"[CONFIRM_PAYMENT] WARNING: Failed to send notification: {str(notif_error)}")
+                import traceback
+                print(f"[CONFIRM_PAYMENT] Notification error traceback:\n{traceback.format_exc()}")
+            # ========================================================================
+            
             # Ya tenemos el usuario de la tupla inicial
             print(f"[CONFIRM_PAYMENT] User details: user_id={user.user_id}, name={user.name}, last_name={user.last_name}")
             
-            # Preparar datos para el schema de respuesta
+            # Preparar datos para el schema de respuesta usando from_attributes
             from app.api.orders.order_schema import UserSimpleSchema
-            print(f"[CONFIRM_PAYMENT] Creating UserSimpleSchema")
-            user_simple = UserSimpleSchema(
-                user_id=user.user_id,
-                name=user.name,
-                last_name=user.last_name
-            )
-            print(f"[CONFIRM_PAYMENT] UserSimpleSchema created successfully")
+            print(f"[CONFIRM_PAYMENT] Creating UserSimpleSchema from user model")
             
-            print(f"[CONFIRM_PAYMENT] Dumping order model")
-            order_data = order.model_dump()
-            print(f"[CONFIRM_PAYMENT] Order dumped, adding user")
-            order_data["user"] = user_simple.model_dump()
+            # Crear un dict temporal que combine order y user
+            # El schema tiene from_attributes=True, así que podemos pasar el modelo directamente
+            print(f"[CONFIRM_PAYMENT] Creating order dict with user")
+            order_dict = {
+                "order_id": order.order_id,
+                "folio": order.folio,
+                "user": {
+                    "user_id": user.user_id,
+                    "name": user.name,
+                    "last_name": user.last_name
+                },
+                "order_date": order.order_date,
+                "status": order.status,
+                "total_amount": order.total_amount,
+                "payment_type": order.payment_type,
+                "items_summary_json": order.items_summary_json
+            }
             
             print(f"[CONFIRM_PAYMENT] Validating OrderResponseSchema")
-            order_response = OrderResponseSchema.model_validate(order_data)
+            order_response = OrderResponseSchema.model_validate(order_dict)
             print(f"[CONFIRM_PAYMENT] OrderResponseSchema validated successfully")
             
             return {

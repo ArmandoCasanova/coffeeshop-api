@@ -23,10 +23,9 @@ async def list_notifications(
     current_user: UserModel = Depends(get_current_user),
     session: Session = Depends(get_db),
 ):
+    """Get paginated notifications for current user"""
     controller = NotificationController(session)
-    notifs, total = await controller.get_notifications(current_user.user_id, page, page_size)
-    notif_list = [NotificationResponseSchema.model_validate(n) for n in notifs]
-    return NotificationListResponse(notifications=notif_list, total=total, page=page, page_size=page_size)
+    return await controller.get_notifications(current_user.user_id, page, page_size)
 
 
 @router.post("/", response_model=NotificationResponseSchema)
@@ -35,12 +34,13 @@ async def create_notification(
     current_user: UserModel = Depends(get_current_user),
     session: Session = Depends(get_db),
 ):
+    """Create a notification (admin only)"""
     # Only admin can create arbitrary notifications
-    if str(current_user.role) != "UserRole.admin" and getattr(current_user, 'role', None) != UserRole.admin:
+    if current_user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Only admins can create notifications")
+    
     controller = NotificationController(session)
-    notif = await controller.create_notification(notification_data)
-    return NotificationResponseSchema.model_validate(notif)
+    return await controller.create_notification(notification_data)
 
 
 @router.post("/mark-read")
@@ -49,9 +49,9 @@ async def mark_read(
     current_user: UserModel = Depends(get_current_user),
     session: Session = Depends(get_db),
 ):
+    """Mark specific notifications as read"""
     controller = NotificationController(session)
-    updated = await controller.mark_read(payload.ids, current_user.user_id)
-    return {"updated": updated}
+    return await controller.mark_read(payload.ids, current_user.user_id)
 
 
 @router.post("/mark-all-read")
@@ -59,9 +59,9 @@ async def mark_all_read(
     current_user: UserModel = Depends(get_current_user),
     session: Session = Depends(get_db),
 ):
+    """Mark all notifications as read"""
     controller = NotificationController(session)
-    updated = await controller.mark_all_read(current_user.user_id)
-    return {"updated": updated}
+    return await controller.mark_all_read(current_user.user_id)
 
 
 @router.delete("/{notification_id}")
@@ -70,8 +70,6 @@ async def delete_notification(
     current_user: UserModel = Depends(get_current_user),
     session: Session = Depends(get_db),
 ):
+    """Delete a notification"""
     controller = NotificationController(session)
-    deleted = await controller.delete_notification(notification_id, current_user.user_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Notification not found")
-    return {"message": "Notification deleted"}
+    return await controller.delete_notification(notification_id, current_user.user_id)

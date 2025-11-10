@@ -30,7 +30,8 @@ def upgrade() -> None:
         sa.Column('body', sa.Text(), nullable=True),
         sa.Column('data', postgresql.JSONB(), nullable=False, server_default=sa.text("'{}'::jsonb")),
         sa.Column('is_read', sa.Boolean(), nullable=False, server_default=sa.text('false')),
-        sa.Column('created_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()')),
+    sa.Column('created_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()')),
+    sa.Column('updated_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()')),
         sa.Column('expires_at', sa.TIMESTAMP(timezone=True), nullable=True),
     )
     op.create_index('idx_notifications_userid_createdat', 'notifications', ['user_id', 'created_at'])
