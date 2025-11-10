@@ -25,6 +25,7 @@ class OrderModel(BaseCoffeeAppModel, table=True):
     order_date: datetime = Field(default_factory=datetime.utcnow)
     status: OrderStatus = Field(sa_column=Column(Enum(OrderStatus), nullable=False))
     total_amount: float
-    points_earned: float
+    points_earned: float = Field(default=0.0)
+    points_used: float = Field(default=0.0)
     payment_type: PaymentType = Field(sa_column=Column(Enum(PaymentType), nullable=False))
     items_summary_json: dict = Field(sa_column=Column(JSONB))
