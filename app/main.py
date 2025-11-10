@@ -15,6 +15,7 @@ from app.api.payments.payments_router import router as payments_router
 from app.api.clients.client_router import router as client_router
 from app.api.users.user_router import router as user_router
 from app.api.notifications.notification_router import router as notifications_router
+from app.api.points.points_router import router as points_router
 
 
 # Configuración
@@ -75,6 +76,7 @@ app.include_router(payments_router, prefix=settings.API_V1, tags=["Payments"])
 app.include_router(client_router, prefix=settings.API_V1, tags=["Clients"])
 app.include_router(user_router, prefix=settings.API_V1, tags=["Users"])
 app.include_router(notifications_router, prefix=settings.API_V1, tags=["Notifications"])
+app.include_router(points_router, prefix=settings.API_V1, tags=["Points"])
 
 
 # Endpoint raíz de prueba
