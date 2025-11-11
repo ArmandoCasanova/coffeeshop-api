@@ -51,7 +51,7 @@ async def save_category_image(image: UploadFile) -> str:
 
 
 @router.post(
-    "/",
+    "",
     response_model=CategoryResponseSchema,
     status_code=201,
     summary="Crear una nueva categoría con imagen (multipart/form-data)"
@@ -83,7 +83,7 @@ async def create_category(
     return await run_in_threadpool(controller.create_category, category_data)
 
 
-@router.get("/", response_model=CategoryListResponseSchema)
+@router.get("", response_model=CategoryListResponseSchema)
 async def get_all_categories(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(10, ge=1, le=100, description="Items per page"),

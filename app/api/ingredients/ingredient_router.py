@@ -17,7 +17,7 @@ from app.api.ingredients.ingredient_schema import (
 router = APIRouter(prefix="/ingredients", tags=["ingredients"])
 
 
-@router.post("/", response_model=IngredientResponseSchema)
+@router.post("", response_model=IngredientResponseSchema)
 async def create_ingredient(
     ingredient_data: IngredientCreateSchema,
     session: Session = Depends(get_db)
@@ -27,7 +27,7 @@ async def create_ingredient(
     return await controller.create_ingredient(ingredient_data)
 
 
-@router.get("/", response_model=IngredientListResponseSchema)
+@router.get("", response_model=IngredientListResponseSchema)
 async def get_all_ingredients(
     page: int = Query(1, ge=1, description="Número de página"),
     page_size: int = Query(10, ge=1, le=100, description="Elementos por página"),
