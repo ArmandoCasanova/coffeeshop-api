@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 # Routers
 from app.api.auth.auth_router import router as auth_router
 from app.api.categories.category_router import router as category_router
+from app.api.customization.customization_router import router as customization_router
 from app.api.dashboard.dashboard_router import router as dashboard_router
 from app.api.products.product_router import router as product_router
 from app.api.ingredients.ingredient_router import router as ingredient_router
@@ -68,6 +69,7 @@ async def http_exception_handler(_, exc: HTTPException):
 app.include_router(auth_router, prefix=settings.API_V1, tags=["Auth"])
 app.include_router(product_router, prefix=settings.API_V1, tags=["Products"])
 app.include_router(ingredient_router, prefix=settings.API_V1, tags=["Ingredients"])
+app.include_router(customization_router, prefix=settings.API_V1, tags=["Customization"])
 app.include_router(dashboard_router, prefix=settings.API_V1, tags=["Dashboard"])
 app.include_router(orders_router, prefix=settings.API_V1, tags=["Orders"])
 app.include_router(category_router, prefix=settings.API_V1, tags=["Categories"])
