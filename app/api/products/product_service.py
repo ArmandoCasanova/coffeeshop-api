@@ -95,6 +95,8 @@ class ProductService:
         except HTTPException:
             raise
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             CoffeeAppHttpResponse.internal_error()
 
     async def search_products_by_name(

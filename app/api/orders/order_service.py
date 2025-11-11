@@ -54,15 +54,11 @@ class OrderService:
 
             promotion_discount = 0
             if order_data.promotion:
-                # Calcular el descuento según el tipo de promoción
                 if order_data.promotion.discount_type == "percentage":
-                    # Descuento por porcentaje
                     promotion_discount = total_amount * (order_data.promotion.discount_value / 100)
                 elif order_data.promotion.discount_type == "fixed_amount":
-                    # Descuento de monto fijo
                     promotion_discount = order_data.promotion.discount_value
                 
-                # Aplicar el descuento al total
                 total_amount -= promotion_discount
 
             total_amount = max(0, total_amount)

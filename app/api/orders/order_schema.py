@@ -47,8 +47,8 @@ class OrderItemCreateSchema(BaseModel):
 class PromotionInfoSchema(BaseModel):
     promotion_id: UUID
     code: str
-    discount_type: DiscountType  # percentage o fixed_amount
-    discount_value: float  # El valor del descuento (porcentaje o monto)
+    discount_type: DiscountType
+    discount_value: float
 
     class Config:
         alias_generator = to_camel
