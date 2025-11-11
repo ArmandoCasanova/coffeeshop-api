@@ -5,6 +5,11 @@ from datetime import datetime, timedelta
 from app.models.catalog.product_model import ProductModel
 from app.models.catalog.product_category_model import ProductCategoryModel
 from app.models.catalog.product_category_link_model import ProductCategoryLinkModel
+from app.models.inventory.product_ingredient_model import ProductIngredientModel
+from app.models.customization.product_customization_group_model import ProductCustomizationGroupModel
+from app.models.customization.customization_group_model import CustomizationGroupModel
+from app.models.customization.customization_option_model import CustomizationOptionModel
+from app.models.inventory.ingredient_model import IngredientModel
 from app.models.orders.order_item_model import OrderItemModel
 from app.models.orders.order_model import OrderModel
 from app.models.users.user_favorite_model import UserFavoriteModel
@@ -16,8 +21,44 @@ class ProductRepository:
 
     async def create_product(self, product_data: dict) -> ProductModel:
         try:
+            category_ids = product_data.pop('category_ids', [])
+            customization_group_ids = product_data.pop('customization_group_ids', [])
+            ingredients = product_data.pop('ingredients', [])
+            
+
             new_product = ProductModel(**product_data)
             self.session.add(new_product)
+            self.session.flush()  
+            
+
+            for category_id in category_ids:
+                category_link = ProductCategoryLinkModel(
+                    product_id=new_product.product_id,
+                    category_id=category_id
+                )
+                self.session.add(category_link)
+            
+
+            for group_id in customization_group_ids:
+                group_link = ProductCustomizationGroupModel(
+                    product_id=new_product.product_id,
+                    group_id=group_id
+                )
+                self.session.add(group_link)
+            
+
+            for ingredient in ingredients:
+                ingredient_link = ProductIngredientModel(
+                    product_id=new_product.product_id,
+                    ingredient_id=ingredient['ingredient_id'],
+                    quantity_required=float(ingredient['quantity_required'])
+                )
+                self.session.add(ingredient_link)
+            
+            new_product.category_info_json = self._build_category_json(category_ids)
+            new_product.customization_details_json = self._build_customization_json(customization_group_ids)
+            new_product.ingredients_json = self._build_ingredients_json(ingredients)
+            
             self.session.commit()
             self.session.refresh(new_product)
             return new_product
@@ -87,9 +128,70 @@ class ProductRepository:
             if not product:
                 return None
 
+            category_ids = update_data.pop('category_ids', None)
+            customization_group_ids = update_data.pop('customization_group_ids', None)
+            ingredients = update_data.pop('ingredients', None)
+            
             for field, value in update_data.items():
                 if hasattr(product, field) and value is not None:
                     setattr(product, field, value)
+            
+            if category_ids is not None:
+                self.session.exec(
+                    select(ProductCategoryLinkModel).where(
+                        ProductCategoryLinkModel.product_id == product_id
+                    )
+                ).all()
+                for link in self.session.exec(
+                    select(ProductCategoryLinkModel).where(
+                        ProductCategoryLinkModel.product_id == product_id
+                    )
+                ).all():
+                    self.session.delete(link)
+                
+                for category_id in category_ids:
+                    category_link = ProductCategoryLinkModel(
+                        product_id=product_id,
+                        category_id=category_id
+                    )
+                    self.session.add(category_link)
+                
+                product.category_info_json = self._build_category_json(category_ids)
+            
+            if customization_group_ids is not None:
+                for link in self.session.exec(
+                    select(ProductCustomizationGroupModel).where(
+                        ProductCustomizationGroupModel.product_id == product_id
+                    )
+                ).all():
+                    self.session.delete(link)
+                
+                for group_id in customization_group_ids:
+                    group_link = ProductCustomizationGroupModel(
+                        product_id=product_id,
+                        group_id=group_id
+                    )
+                    self.session.add(group_link)
+                
+                product.customization_details_json = self._build_customization_json(customization_group_ids)
+            
+            if ingredients is not None:
+                for link in self.session.exec(
+                    select(ProductIngredientModel).where(
+                        ProductIngredientModel.product_id == product_id
+                    )
+                ).all():
+                    self.session.delete(link)
+                
+                for ingredient in ingredients:
+                    ingredient_link = ProductIngredientModel(
+                        product_id=product_id,
+                        ingredient_id=ingredient['ingredient_id'],
+                        quantity_required=float(ingredient['quantity_required'])
+                    )
+                    self.session.add(ingredient_link)
+                
+                product.ingredients_json = self._build_ingredients_json(ingredients)
 
             self.session.add(product)
             self.session.commit()
@@ -130,10 +232,8 @@ class ProductRepository:
             List of ProductModel ordered by popularity (most sold first)
         """
         try:
-            # Calculate the date threshold
             date_threshold = datetime.utcnow() - timedelta(days=days)
 
-            # Query to get product_ids ordered by total quantity sold
             subquery = (
                 select(
                     OrderItemModel.product_id,
@@ -147,21 +247,18 @@ class ProductRepository:
                 .limit(limit)
             )
 
-            # Execute the subquery to get product_ids
             result = self.session.exec(subquery).all()
             product_ids = [row[0] for row in result]
 
             if not product_ids:
                 return []
 
-            # Get the full product details maintaining the order
             products_query = select(ProductModel).where(
                 ProductModel.product_id.in_(product_ids),
                 ProductModel.is_available == True,
             )
             products = self.session.exec(products_query).all()
 
-            # Sort products based on the order of product_ids
             product_dict = {p.product_id: p for p in products}
             sorted_products = [
                 product_dict[pid] for pid in product_ids if pid in product_dict
@@ -188,7 +285,6 @@ class ProductRepository:
             if not product_ids:
                 return []
 
-            # Convert string UUIDs to UUID objects if needed
             uuid_list = [
                 UUID(pid) if isinstance(pid, str) else pid for pid in product_ids
             ]
@@ -248,10 +344,8 @@ class ProductRepository:
             List of dictionaries with category info and sales count
         """
         try:
-            # Calculate the date threshold
             date_threshold = datetime.utcnow() - timedelta(days=days)
 
-            # Query to get categories ordered by total sales
             query_with_sales = (
                 select(
                     ProductCategoryModel.category_id,
@@ -286,7 +380,6 @@ class ProductRepository:
 
             result_with_sales = self.session.exec(query_with_sales).all()
 
-            # Convert to list of dictionaries
             categories = []
             category_ids_with_sales = set()
 
@@ -302,11 +395,10 @@ class ProductRepository:
                 )
                 category_ids_with_sales.add(row[0])
 
-            # If we have fewer than limit categories, get categories without sales
             if len(categories) < limit:
                 remaining_limit = limit - len(categories)
 
-                # Query to get all other categories (without sales in the period)
+
                 query_without_sales = (
                     select(
                         ProductCategoryModel.category_id,
@@ -333,8 +425,124 @@ class ProductRepository:
                             "total_sales": 0,
                         }
                     )
-
-            # Return only up to limit
             return categories[:limit]
         except Exception:
             raise
+
+    def _build_category_json(self, category_ids: List[UUID]) -> Dict[str, Any]:
+        """Build category_info_json from category IDs for UI reading"""
+        if not category_ids:
+            return {}
+        
+        categories = self.session.exec(
+            select(ProductCategoryModel).where(
+                ProductCategoryModel.category_id.in_(category_ids)
+            )
+        ).all()
+        
+        if not categories:
+            return {}
+        
+        categories_list = []
+        for category in categories:
+            categories_list.append({
+                "category_id": str(category.category_id),
+                "category_name": category.name
+            })
+        
+        primary = categories_list[0] if categories_list else {}
+        
+        return {
+            "category_id": primary.get("category_id", ""),
+            "category_name": primary.get("category_name", ""),
+            "categories": categories_list  
+        }
+    
+    def _build_customization_json(self, group_ids: List[UUID]) -> Dict[str, Any]:
+        """Build customization_details_json from group IDs for UI reading"""
+        if not group_ids:
+            return {}
+        
+        customization_details = {}
+        
+        for group_id in group_ids:
+            group = self.session.exec(
+                select(CustomizationGroupModel).where(
+                    CustomizationGroupModel.group_id == group_id
+                )
+            ).first()
+            
+            if not group:
+                continue
+            
+            options = self.session.exec(
+                select(CustomizationOptionModel).where(
+                    CustomizationOptionModel.group_id == group_id
+                )
+            ).all()
+            
+            options_list = []
+            for option in options:
+                option_data = {
+                    "option_id": str(option.option_id),
+                    "name": option.name,
+                    "extra_cost": float(option.extra_cost),
+                    "is_size_option": option.is_size_option,
+                    "details": option.details or ""
+                }
+                
+                if option.consumed_ingredient_id:
+                    ingredient = self.session.exec(
+                        select(IngredientModel).where(
+                            IngredientModel.ingredient_id == option.consumed_ingredient_id
+                        )
+                    ).first()
+                    
+                    if ingredient:
+                        option_data["consumed_ingredient"] = {
+                            "ingredient_id": str(option.consumed_ingredient_id),
+                            "ingredient_name": ingredient.name,
+                            "quantity_consumed": float(option.quantity_consumed),
+                            "unit": ingredient.unit_of_measure
+                        }
+                
+                options_list.append(option_data)
+            
+            customization_details[group.system_name] = {
+                "group_id": str(group.group_id),
+                "system_name": group.system_name,
+                "display_name": group.display_name,
+                "options": options_list
+            }
+        
+        return customization_details
+    
+    def _build_ingredients_json(self, ingredients: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Build ingredients_json from ingredient list for UI reading"""
+        if not ingredients:
+            return {}
+        
+        ingredients_list = []
+        
+        for ingredient_data in ingredients:
+            ingredient_id = ingredient_data['ingredient_id']
+            quantity = float(ingredient_data['quantity_required'])
+            
+            ingredient = self.session.exec(
+                select(IngredientModel).where(
+                    IngredientModel.ingredient_id == ingredient_id
+                )
+            ).first()
+            
+            if not ingredient:
+                continue
+            
+            ingredients_list.append({
+                "ingredientId": str(ingredient.ingredient_id),
+                "quantity": quantity,
+                "unit": ingredient.unit_of_measure
+            })
+        
+        return {
+            "ingredients": ingredients_list
+        }

@@ -24,8 +24,8 @@ class IngredientResponseSchema(BaseModel):
     unit_of_measure: str
     stock_current_level: int
     stock_optimal_level: int
-    created_at: datetime  # Campo heredado de BaseCoffeeAppModel
-    updated_at: datetime  # Campo heredado de BaseCoffeeAppModel
+    created_at: datetime  
+    updated_at: datetime  
 
     class Config:
         from_attributes = True

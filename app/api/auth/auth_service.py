@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from uuid import UUID
 from sqlmodel import Session
-from fastapi import HTTPException
+from fastapi import HTTPException, Response, status
 from pydantic import EmailStr
 from typing import Union
 
@@ -22,6 +22,7 @@ class AuthService:
     """
     
     def __init__(self, session: Session):
+        self.session = session
         self.auth_repository = AuthRepository(session)
     
     async def signup_user(self, user_data: SignupSchema) -> UserModel:
@@ -159,16 +160,19 @@ class AuthService:
 
     async def generate_and_create_password_reset_code(self, user_id: UUID) -> VerificationCodePasswordResetModel:
         """
-        Generar y crear código de reset de contraseña para un usuario
+        Generar (o actualizar) código de reset de contraseña para un usuario
         """
-        try:
+        try:            
             code = await self.auth_repository.generate_unique_verification_code(is_password_reset=True)
-            reset_code = await self.auth_repository.create_password_reset_code(code, user_id)
+            reset_code = await self.auth_repository.create_password_reset_code(code, user_id)          
+
             return reset_code
+
         except HTTPException:
             raise
-        except Exception:
+        except Exception as e:            
             CoffeeAppHttpResponse.internal_error()
+
 
     async def get_and_validate_verification_code(self, code: str) -> VerificationCodeModel:
         """
@@ -318,5 +322,64 @@ class AuthService:
             return {"message": "Logout successful, cache cleared"}
         except HTTPException:
             raise
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def verify_password_reset_code(self, code: str) -> dict:
+        """
+        Verificar usuario usando código de verificación
+        Proceso completo: validar código, marcar como usado, verificar usuario
+        """
+        try:
+            # Validar y obtener código
+            verification_code = await self.get_and_validate_password_reset_code(code)
+            
+            # Marcar código como usado
+            await self.auth_repository.update_verification_code_status(verification_code, is_alive=False)
+            
+            return Response(status_code=status.HTTP_200_OK)
+        
+        except HTTPException:
+            raise
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+    
+    async def get_and_validate_password_reset_code(self, code: str) -> VerificationCodeModel:
+        """
+        Obtener y validar código de verificación
+        Aplica validaciones de negocio: existe, está activo
+        """
+        try:
+            password_reset_code = await self.auth_repository.get_password_reset_code(code)
+            
+            if not password_reset_code:
+                CoffeeAppHttpResponse.unauthorized_with_code(
+                    error_id=CoffeeAppResponseCodes.INVALID_CODE.code,
+                    message=CoffeeAppResponseCodes.INVALID_CODE.detail,
+                )
+            
+            if not password_reset_code.is_alive:
+                CoffeeAppHttpResponse.bad_request(
+                    data={
+                        "message": CoffeeAppResponseCodes.ALREADY_USED_CODE.detail,
+                        "providedValue": {"code": password_reset_code.code},
+                    },
+                    error_id=CoffeeAppResponseCodes.ALREADY_USED_CODE.code,
+                    message=CoffeeAppResponseCodes.ALREADY_USED_CODE.detail,
+                )
+            
+            return password_reset_code
+        except HTTPException:
+            raise
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def update_user_password(self, user_id: UUID, password: str):
+        try:
+            hashed_password = get_password_hash(password)
+            await self.auth_repository.update_user_password(
+                user_id=user_id,
+                hashed_password=hashed_password
+            )
         except Exception:
             CoffeeAppHttpResponse.internal_error()

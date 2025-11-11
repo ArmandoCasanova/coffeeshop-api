@@ -16,17 +16,21 @@ class OrderRepository:
     async def create_order(
         self,
         user_id: UUID,
+        folio: str,
         total_amount: float,
         points_earned: float,
+        points_used: float,
         payment_type,
         items_summary_json: list,
     ) -> OrderModel:
         """Create a new order"""
         order = OrderModel(
             user_id=user_id,
+            folio=folio,
             status=OrderStatus.pending,
             total_amount=total_amount,
             points_earned=points_earned,
+            points_used=points_used,
             payment_type=payment_type,
             items_summary_json=items_summary_json,
         )
@@ -54,7 +58,6 @@ class OrderRepository:
         self.session.add(order_item)
         self.session.flush()
 
-        # Add customizations
         for customization in customizations:
             item_customization = OrderItemCustomizationModel(
                 order_item_id=order_item.order_item_id,
@@ -117,6 +120,12 @@ class OrderRepository:
         result = self.session.exec(query).first()
         return result
 
+    async def get_order_by_folio(self, folio: str) -> Optional[OrderModel]:
+        """Get an order by folio"""
+        query = select(OrderModel).where(OrderModel.folio == folio)
+        result = self.session.exec(query).first()
+        return result
+
     async def update_order_status(
         self, order_id: UUID, status: OrderStatus
     ) -> Optional[OrderModel]:
@@ -149,12 +158,10 @@ class OrderRepository:
         if not order:
             return False
 
-        # Delete order items and their customizations (cascade should handle this)
         statement = select(OrderItemModel).where(OrderItemModel.order_id == order_id)
         items = self.session.exec(statement).all()
 
         for item in items:
-            # Delete customizations first
             customization_statement = select(OrderItemCustomizationModel).where(
                 OrderItemCustomizationModel.order_item_id == item.order_item_id
             )

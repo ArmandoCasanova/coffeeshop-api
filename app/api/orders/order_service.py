@@ -2,6 +2,8 @@ from sqlmodel import Session
 from uuid import UUID
 from fastapi import HTTPException
 from datetime import datetime
+import random
+import string
 
 from app.core.http_response import CoffeeAppHttpResponse
 from app.models.orders.order_model import OrderModel, OrderStatus, PaymentType
@@ -20,22 +22,69 @@ class OrderService:
         self.session = session
         self.repository = OrderRepository(session)
 
+    def _generate_folio(self) -> str:
+        """Generate a unique 8-character folio (e.g., CF240A3B)"""
+        chars = string.ascii_uppercase + string.digits
+        random_part = ''.join(random.choices(chars, k=6))
+        return f"CF{random_part}"
+
+    async def _ensure_unique_folio(self) -> str:
+        """Generate a folio and ensure it's unique"""
+        max_attempts = 10
+        for _ in range(max_attempts):
+            folio = self._generate_folio()
+            existing = await self.repository.get_order_by_folio(folio)
+            if not existing:
+                return folio
+        timestamp = datetime.now().strftime("%H%M%S")
+        return f"CF{timestamp}"
+
     async def create_order(self, user_id: UUID, order_data: OrderCreateSchema):
         """Create a new order with items and customizations"""
         try:
-            # Calculate total amount from items
+
+            from app.api.points.points_service import PointsService
+            points_service = PointsService(self.session)
+            
+            folio = await self._ensure_unique_folio()
+            
             total_amount = sum(
                 item.price_at_purchase * item.quantity for item in order_data.items
             )
 
-            # Apply promotion discount if provided
             promotion_discount = 0
             if order_data.promotion:
                 promotion_discount = order_data.promotion.discount
                 total_amount -= promotion_discount
 
-            # Ensure total is not negative
             total_amount = max(0, total_amount)
+
+            user = await self.repository.get_user(user_id)
+            
+            points_used = order_data.points_used or 0.0
+            if points_used > 0:
+                if points_used > user.points:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"No tienes suficientes puntos. Disponibles: {user.points}"
+                    )
+                
+                # Deduct points from total (1 punto = 1 peso)
+                points_discount = min(points_used, total_amount)
+                total_amount -= points_discount
+                points_used = points_discount
+                
+                # If paid entirely with points, set payment_type to points
+                if total_amount == 0:
+                    order_data.payment_type = PaymentType.points
+            
+            # Calculate points earned (only if not paid entirely with points)
+            if order_data.payment_type == PaymentType.points:
+                points_earned = 0.0  # No points earned when paying with points
+            else:
+                # Calculate based on original amount before points discount
+                original_amount = total_amount + points_used
+                points_earned = await points_service.calculate_points_earned(original_amount)
 
             # Create items summary for quick reference
             items_summary = [
@@ -58,14 +107,13 @@ class OrderService:
                     }
                 })
 
-            # Calculate points earned (1% of total)
-            points_earned = total_amount * 0.01
-
             # Create order
             order = await self.repository.create_order(
                 user_id=user_id,
+                folio=folio,
                 total_amount=total_amount,
                 points_earned=points_earned,
+                points_used=points_used,
                 payment_type=order_data.payment_type,
                 items_summary_json=items_summary,
             )
@@ -84,8 +132,7 @@ class OrderService:
             self.session.commit()
             self.session.refresh(order)
 
-            # Get user info
-            user = await self.repository.get_user(user_id)
+            # Get user info for response
             order_data_dict = order.model_dump()
             order_data_dict["user"] = user
 
@@ -96,7 +143,6 @@ class OrderService:
             raise
         except Exception as e:
             self.session.rollback()
-            print(f"Error creating order: {str(e)}")
             CoffeeAppHttpResponse.internal_error()
 
     async def get_all_orders(
@@ -123,7 +169,6 @@ class OrderService:
         except HTTPException:
             raise
         except Exception as e:
-            print(f"Error getting orders: {str(e)}")
             CoffeeAppHttpResponse.internal_error()
 
     async def get_user_orders(self, user_id: UUID, page: int, page_size: int):
@@ -148,7 +193,6 @@ class OrderService:
         except HTTPException:
             raise
         except Exception as e:
-            print(f"Error getting user orders: {str(e)}")
             CoffeeAppHttpResponse.internal_error()
 
     async def get_order_by_id(self, order_id: UUID):
@@ -164,7 +208,6 @@ class OrderService:
         except HTTPException:
             raise
         except Exception as e:
-            print(f"Error getting order: {str(e)}")
             CoffeeAppHttpResponse.internal_error()
 
     async def update_order_status(self, order_id: UUID, data: OrderUpdateStatusSchema):
@@ -186,7 +229,6 @@ class OrderService:
             raise
         except Exception as e:
             self.session.rollback()
-            print(f"Error updating order status: {str(e)}")
             CoffeeAppHttpResponse.internal_error()
 
     async def update_order_payment_type(self, order_id: UUID, data: OrderUpdatePaymentTypeSchema):
@@ -208,86 +250,115 @@ class OrderService:
             raise
         except Exception as e:
             self.session.rollback()
-            print(f"Error updating order payment type: {str(e)}")
             CoffeeAppHttpResponse.internal_error()
 
     async def confirm_payment(self, order_id: UUID, user_id: UUID) -> dict:
         """
-        Simula confirmación de pago exitoso.
-        Cambia status a 'paid' y descuenta stock de ingredientes.
+        Confirm payment: deduct stock, update user points, send notification.
+        For orders paid entirely with points, skip payment gateway.
         """
         try:
-            print(f"[CONFIRM_PAYMENT] Starting payment confirmation for order_id={order_id}, user_id={user_id}")
-            
-            # Obtener la orden - el repositorio devuelve (OrderModel, UserModel)
             result = await self.repository.get_order_by_id(order_id)
             if not result:
                 CoffeeAppHttpResponse.not_found(message="Order not found")
             
-            # Desempaquetar la tupla
             order, user = result
             
-            print(f"[CONFIRM_PAYMENT] Order found: order.user_id={order.user_id}, order.status={order.status}")
-            
-            # Verificar que la orden pertenece al usuario
             if str(order.user_id) != str(user_id):
                 raise HTTPException(status_code=403, detail="Access denied: not your order")
             
-            # Verificar que la orden está en estado pending
             if order.status != OrderStatus.pending:
                 raise HTTPException(
                     status_code=400,
                     detail=f"Order cannot be paid. Current status: {order.status}"
                 )
             
-            # Importar el servicio de inventario
+            # Deduct inventory
             from app.services.inventory_service import InventoryService
             inventory_service = InventoryService(self.session)
             
-            # Preparar items para descuento de stock
             items_for_stock = []
             if order.items_summary_json:
-                print(f"[CONFIRM_PAYMENT] items_summary_json: {order.items_summary_json}")
                 for item in order.items_summary_json:
-                    print(f"[CONFIRM_PAYMENT] Processing item: {item}")
                     items_for_stock.append({
                         "product_id": item.get("product_id"),
                         "quantity": item.get("quantity", item.get("qty")),
                         "customizations": item.get("customizations", {})
                     })
             
-            print(f"[CONFIRM_PAYMENT] items_for_stock prepared: {items_for_stock}")
-            
-            # Descontar stock de ingredientes
             stock_result = await inventory_service.deduct_stock_for_order(items_for_stock)
             
-            # Actualizar status de la orden a 'paid'
+            # Update user points: deduct used points, add earned points
+            if order.points_used > 0:
+                user.points -= order.points_used
+            
+            if order.points_earned > 0:
+                user.points += order.points_earned
+            
+            self.session.add(user)
+            
+            # Update order status
             order.status = OrderStatus.paid
             self.session.add(order)
             self.session.commit()
             self.session.refresh(order)
+            self.session.refresh(user)
             
-            # Ya tenemos el usuario de la tupla inicial
-            print(f"[CONFIRM_PAYMENT] User details: user_id={user.user_id}, name={user.name}, last_name={user.last_name}")
+            # Send notifications
+            try:
+                from app.api.notifications.notification_service import NotificationService
+                notification_service = NotificationService(self.session)
+                
+                # Payment successful notification
+                await notification_service.create_notification_safe(
+                    user_id=user_id,
+                    notification_type="payment_successful",
+                    title="¡Compra exitosa!",
+                    body=f"Orden {order.folio} confirmada. Total: ${order.total_amount:.2f} MXN.",
+                    data={
+                        "order_id": str(order.order_id),
+                        "folio": order.folio,
+                        "total_amount": order.total_amount,
+                        "points_earned": order.points_earned,
+                        "points_used": order.points_used,
+                    }
+                )
+                
+                # Points earned notification (only if earned points)
+                if order.points_earned > 0:
+                    await notification_service.create_notification_safe(
+                        user_id=user_id,
+                        notification_type="points",
+                        title="¡Puntos recibidos!",
+                        body=f"Ganaste {order.points_earned:.0f} puntos en tu compra. Total acumulado: {user.points:.0f} puntos.",
+                        data={
+                            "points_earned": order.points_earned,
+                            "total_points": user.points,
+                            "order_id": str(order.order_id),
+                            "folio": order.folio,
+                        }
+                    )
+            except Exception:
+                pass
             
-            # Preparar datos para el schema de respuesta
             from app.api.orders.order_schema import UserSimpleSchema
-            print(f"[CONFIRM_PAYMENT] Creating UserSimpleSchema")
-            user_simple = UserSimpleSchema(
-                user_id=user.user_id,
-                name=user.name,
-                last_name=user.last_name
-            )
-            print(f"[CONFIRM_PAYMENT] UserSimpleSchema created successfully")
             
-            print(f"[CONFIRM_PAYMENT] Dumping order model")
-            order_data = order.model_dump()
-            print(f"[CONFIRM_PAYMENT] Order dumped, adding user")
-            order_data["user"] = user_simple.model_dump()
+            order_dict = {
+                "order_id": order.order_id,
+                "folio": order.folio,
+                "user": {
+                    "user_id": user.user_id,
+                    "name": user.name,
+                    "last_name": user.last_name
+                },
+                "order_date": order.order_date,
+                "status": order.status,
+                "total_amount": order.total_amount,
+                "payment_type": order.payment_type,
+                "items_summary_json": order.items_summary_json
+            }
             
-            print(f"[CONFIRM_PAYMENT] Validating OrderResponseSchema")
-            order_response = OrderResponseSchema.model_validate(order_data)
-            print(f"[CONFIRM_PAYMENT] OrderResponseSchema validated successfully")
+            order_response = OrderResponseSchema.model_validate(order_dict)
             
             return {
                 "success": True,
@@ -301,9 +372,6 @@ class OrderService:
             raise
         except Exception as e:
             self.session.rollback()
-            print(f"[CONFIRM_PAYMENT] ERROR: {type(e).__name__}: {str(e)}")
-            import traceback
-            print(f"[CONFIRM_PAYMENT] TRACEBACK:\n{traceback.format_exc()}")
             raise HTTPException(status_code=500, detail=str(e))
 
     async def delete_order(self, order_id: UUID) -> dict:
@@ -320,5 +388,4 @@ class OrderService:
             raise
         except Exception as e:
             self.session.rollback()
-            print(f"Error deleting order: {str(e)}")
             CoffeeAppHttpResponse.internal_error()

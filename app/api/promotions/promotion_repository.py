@@ -32,6 +32,49 @@ class PromotionRepository:
         except Exception:
             raise
 
+    async def get_all_promotions(
+        self, skip: int = 0, limit: int = 10, is_active: Optional[bool] = None
+    ) -> tuple[List[PromotionModel], int]:
+        """
+        Obtiene todas las promociones de la tabla promotions con paginación.
+        """
+        try:
+            query = select(PromotionModel).order_by(PromotionModel.created_at.desc())
+            
+            # Filtrar por estado activo si se especifica
+            if is_active is not None:
+                now = datetime.utcnow()
+                if is_active:
+                    query = query.where(
+                        PromotionModel.start_date <= now,
+                        PromotionModel.end_date >= now
+                    )
+                else:
+                    query = query.where(
+                        (PromotionModel.start_date > now) | (PromotionModel.end_date < now)
+                    )
+            
+            # Contar total
+            total_query = select(func.count()).select_from(PromotionModel)
+            if is_active is not None:
+                now = datetime.utcnow()
+                if is_active:
+                    total_query = total_query.where(
+                        PromotionModel.start_date <= now,
+                        PromotionModel.end_date >= now
+                    )
+                else:
+                    total_query = total_query.where(
+                        (PromotionModel.start_date > now) | (PromotionModel.end_date < now)
+                    )
+            
+            total = self.session.exec(total_query).one()
+            results = self.session.exec(query.offset(skip).limit(limit)).all()
+            
+            return list(results), total
+        except Exception:
+            raise
+
     async def get_all_applied_promotions(
         self, skip: int = 0, limit: int = 10
     ) -> tuple[List, int]:
@@ -40,12 +83,10 @@ class PromotionRepository:
         uniendo las tablas products, promotions y product_promotions.
         """
         try:
-            # 1. Definimos la consulta principal con JOIN y campos específicos
-            # Pydantic (con from_attributes=True) mapeará esto al esquema
             query = (
                 select(
                     ProductModel.product_id,
-                    ProductModel.base_price, # Mapeado a 'precio' por el alias del esquema
+                    ProductModel.base_price, 
                     PromotionModel.promotion_id,
                     PromotionModel.discount_type,
                     PromotionModel.discount_value,
@@ -63,15 +104,11 @@ class PromotionRepository:
                 .order_by(ProductModel.product_id, PromotionModel.start_date)
             )
 
-            # 2. Definimos la consulta de conteo total
-            # Contamos sobre la tabla de unión (product_promotions)
             total_query = select(func.count(ProductPromotionModel.product_id))
 
-            # 3. Ejecutamos ambas consultas
             total = self.session.exec(total_query).one()
             results = self.session.exec(query.offset(skip).limit(limit)).all()
             
-            # 'results' es una lista de Objetos 'Row' que Pydantic puede validar
             return list(results), total
         except Exception:
             self.session.rollback()

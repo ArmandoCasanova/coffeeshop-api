@@ -6,7 +6,7 @@ from app.core.database import get_db
 from app.auth.auth_dependencies import get_current_user
 from app.models.users.user_model import UserModel
 from app.api.auth.auth_controller import AuthController
-from app.api.auth.auth_schema import SignupSchema, AuthResponseSchema, LoginSchema, VerificationRequest, ResendCode
+from app.api.auth.auth_schema import SignupSchema, AuthResponseSchema, LoginSchema, VerificationRequest, ResendCode, RequestPasswordChange, ResetPasswordRequest
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -80,4 +80,56 @@ async def logout(
         raise
     except Exception:
         CoffeeAppHttpResponse.internal_error()
+
+
+@router.post("/password-change-request")
+async def request_password_reset_verification_code(
+    request: RequestPasswordChange, session: Session = Depends(get_db)
+):
+    try:       
+        auth_controller = AuthController(session=session)
+        user_verified = await auth_controller.get_current_user(email=request.email)
+      
+        response = await auth_controller.request_password_reset_verification_code(
+            user=user_verified
+        )
+
+        return response
+
+    except HTTPException as e:
+        raise e
+
+    except Exception as e:
+        raise e
+
+
+@router.post("/verification-password-reset-code")
+async def verify_verification_password_reset_code(
+    request: VerificationRequest, 
+    session: Session = Depends(get_db)
+):  
+    try:
+        controller = AuthController(session)
+        return await controller.verify_verification_password_reset_code(request.code)
+    except HTTPException:
+        raise
+    except Exception:
+        CoffeeAppHttpResponse.internal_error()
+
+@router.put("/password-reset")
+async def reset_password(request: ResetPasswordRequest, session: Session = Depends(get_db)):
+    try:
+        auth_controller = AuthController(session=session)
+
+        user = await auth_controller.get_current_user(email=request.email)
+
+        return await auth_controller.update_user_password(
+            user_id=user.user_id, password=request.password
+        )
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise e
+
 

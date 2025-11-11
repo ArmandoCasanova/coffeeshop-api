@@ -34,6 +34,7 @@ class AuthResponseSchema(BaseModel):
     name: str
     last_name: str
     role: str
+    points: float = 0.0
     access_token: str
     refresh_token: str
     is_verified: bool

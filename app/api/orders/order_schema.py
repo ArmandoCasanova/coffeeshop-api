@@ -57,6 +57,7 @@ class OrderCreateSchema(BaseModel):
     payment_type: PaymentType
     items: List[OrderItemCreateSchema]
     promotion: Optional[PromotionInfoSchema] = None
+    points_used: Optional[float] = 0.0  # Puntos que el usuario quiere usar
 
     class Config:
         alias_generator = to_camel
@@ -65,10 +66,13 @@ class OrderCreateSchema(BaseModel):
 
 class OrderResponseSchema(BaseModel):
     order_id: UUID
+    folio: Optional[str] = None
     user: UserSimpleSchema
     order_date: datetime
     status: OrderStatus
     total_amount: float
+    points_earned: float = 0.0
+    points_used: float = 0.0
     payment_type: PaymentType
     items_summary_json: list
 
