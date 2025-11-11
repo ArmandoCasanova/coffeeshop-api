@@ -546,3 +546,54 @@ class ProductRepository:
         return {
             "ingredients": ingredients_list
         }
+
+    async def check_is_favorite(self, user_id: UUID, product_id: UUID) -> bool:
+        try:
+            existing = self.session.exec(
+                select(UserFavoriteModel).where(
+                    UserFavoriteModel.user_id == user_id,
+                    UserFavoriteModel.product_id == product_id
+                )
+            ).first()
+            return existing is not None
+        except Exception:
+            raise
+
+    async def add_favorite(self, user_id: UUID, product_id: UUID) -> bool:
+        try:
+            existing = self.session.exec(
+                select(UserFavoriteModel).where(
+                    UserFavoriteModel.user_id == user_id,
+                    UserFavoriteModel.product_id == product_id
+                )
+            ).first()
+            
+            if existing:
+                return False
+            
+            favorite = UserFavoriteModel(user_id=user_id, product_id=product_id)
+            self.session.add(favorite)
+            self.session.commit()
+            return True
+        except Exception:
+            self.session.rollback()
+            raise
+
+    async def remove_favorite(self, user_id: UUID, product_id: UUID) -> bool:
+        try:
+            favorite = self.session.exec(
+                select(UserFavoriteModel).where(
+                    UserFavoriteModel.user_id == user_id,
+                    UserFavoriteModel.product_id == product_id
+                )
+            ).first()
+            
+            if not favorite:
+                return False
+            
+            self.session.delete(favorite)
+            self.session.commit()
+            return True
+        except Exception:
+            self.session.rollback()
+            raise

@@ -124,21 +124,15 @@ class ProductController:
     ) -> List[ProductResponseSchema]:
         """Obtener productos populares basados en ventas"""
         try:
-            logger.info(f"🔍 Controller: Getting popular products with limit={limit}")
             products = await self.service.get_popular_products(limit=limit)
-            logger.info(f"✅ Controller: Got {len(products)} products from service")
             product_list = [
                 ProductResponseSchema.model_validate(product) for product in products
             ]
-            logger.info(f"✅ Controller: Validated {len(product_list)} products")
 
             return product_list
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(
-                f"❌ Error in controller get_popular_products: {str(e)}", exc_info=True
-            )
             CoffeeAppHttpResponse.internal_error()
 
     async def get_user_favorite_products(
@@ -157,10 +151,6 @@ class ProductController:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(
-                f"❌ Error in controller get_user_favorite_products: {str(e)}",
-                exc_info=True,
-            )
             CoffeeAppHttpResponse.internal_error()
 
     async def get_popular_categories(
@@ -168,21 +158,45 @@ class ProductController:
     ) -> List[CategoryResponseSchema]:
         """Obtener categorías populares basadas en ventas"""
         try:
-            logger.info(f"🔍 Controller: Getting popular categories with limit={limit}")
             categories = await self.service.get_popular_categories(limit=limit)
-            logger.info(f"✅ Controller: Got {len(categories)} categories from service")
 
             category_list = [
                 CategoryResponseSchema(**category) for category in categories
             ]
-            logger.info(f"✅ Controller: Validated {len(category_list)} categories")
 
             return category_list
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(
-                f"❌ Error in controller get_popular_categories: {str(e)}",
-                exc_info=True,
-            )
+            CoffeeAppHttpResponse.internal_error()
+
+    async def check_is_favorite(self, user_id: UUID, product_id: UUID) -> dict:
+        try:
+            is_favorite = await self.service.check_is_favorite(user_id, product_id)
+            return {"is_favorite": is_favorite}
+        except HTTPException:
+            raise
+        except Exception as e:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def add_favorite(self, user_id: UUID, product_id: UUID) -> dict:
+        try:
+            result = await self.service.add_favorite(user_id, product_id)
+            if not result:
+                return {"message": "Product already in favorites", "added": False}
+            return {"message": "Product added to favorites", "added": True}
+        except HTTPException:
+            raise
+        except Exception as e:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def remove_favorite(self, user_id: UUID, product_id: UUID) -> dict:
+        try:
+            result = await self.service.remove_favorite(user_id, product_id)
+            if not result:
+                CoffeeAppHttpResponse.not_found(message="Favorite not found")
+            return {"message": "Product removed from favorites", "removed": True}
+        except HTTPException:
+            raise
+        except Exception as e:
             CoffeeAppHttpResponse.internal_error()
