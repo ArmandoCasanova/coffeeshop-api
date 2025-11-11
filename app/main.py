@@ -16,6 +16,8 @@ from app.api.promotions_web.promotionweb_router import router as promotion_route
 from app.api.payments.payments_router import router as payments_router
 from app.api.clients.client_router import router as client_router
 from app.api.users.user_router import router as user_router
+from app.api.reports.report_router import router as report_router
+
 from app.api.notifications.notification_router import router as notifications_router
 from app.api.points.points_router import router as points_router
 
@@ -46,27 +48,24 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-origins = [
-    "http://localhost:5173",
-]
 
 # Middleware CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    
+    expose_headers=["Content-Disposition"]
 )
 
 
-# Manejo global de excepciones HTTP
 @app.exception_handler(HTTPException)
 async def http_exception_handler(_, exc: HTTPException):
     return JSONResponse(status_code=exc.status_code, content=exc.detail)
 
 
-# Incluir routers con prefijos y tags
 app.include_router(auth_router, prefix=settings.API_V1, tags=["Auth"])
 app.include_router(product_router, prefix=settings.API_V1, tags=["Products"])
 app.include_router(ingredient_router, prefix=settings.API_V1, tags=["Ingredients"])
@@ -79,11 +78,11 @@ app.include_router(promotion_router_web, prefix=settings.API_V1, tags=["Promotio
 app.include_router(payments_router, prefix=settings.API_V1, tags=["Payments"])
 app.include_router(client_router, prefix=settings.API_V1, tags=["Clients"])
 app.include_router(user_router, prefix=settings.API_V1, tags=["Users"])
+app.include_router(report_router, prefix=settings.API_V1, tags=["Reports"])
 app.include_router(notifications_router, prefix=settings.API_V1, tags=["Notifications"])
 app.include_router(points_router, prefix=settings.API_V1, tags=["Points"])
 
 
-# Endpoint raíz de prueba
 @app.get("/")
 def read_root():
     return {"message": "Welcome to CoffeeShop API ☕"}
