@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlmodel import Session
 
 from app.core.http_response import CoffeeAppHttpResponse
@@ -12,11 +12,11 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post("/signup", response_model=AuthResponseSchema)
-async def signup(data: SignupSchema, session: Session = Depends(get_db)):
+async def signup(data: SignupSchema, background_tasks: BackgroundTasks, session: Session = Depends(get_db)):
     """Registrar un nuevo usuario"""
     try:
         controller = AuthController(session)
-        return await controller.signup(data)
+        return await controller.signup(data, background_tasks)
     except HTTPException:
         raise
     except Exception:

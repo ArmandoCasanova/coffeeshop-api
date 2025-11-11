@@ -17,7 +17,7 @@ from app.models.users.user_model import UserModel
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
 
-@router.post("/", response_model=OrderResponseSchema)
+@router.post("", response_model=OrderResponseSchema)
 async def create_order(
     order_data: OrderCreateSchema,
     session: Session = Depends(get_db),
@@ -33,7 +33,7 @@ async def create_order(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/", response_model=OrderListResponseSchema)
+@router.get("", response_model=OrderListResponseSchema)
 async def get_all_orders(
     page: int = Query(1, ge=1, description="Número de página"),
     page_size: int = Query(10, ge=1, le=100, description="Elementos por página"),

@@ -597,3 +597,14 @@ class ProductRepository:
         except Exception:
             self.session.rollback()
             raise
+
+    async def get_user_favorites(self, user_id: UUID) -> list[UserFavoriteModel]:
+        """Obtener todos los favoritos de un usuario"""
+        try:
+            favorites = self.session.exec(
+                select(UserFavoriteModel).where(UserFavoriteModel.user_id == user_id)
+            ).all()
+            return favorites
+        except Exception:
+            raise
+

@@ -31,7 +31,14 @@ class ProductService:
                     for ing in product_dict['ingredients']
                 ]
             
-            return await self.product_repository.create_product(product_dict)
+            result = await self.product_repository.create_product(product_dict)
+            
+            # Invalidar caché de admin products
+            await RedisClient.delete("admin:products:all:available=None")
+            await RedisClient.delete("admin:products:all:available=True")
+            await RedisClient.delete("admin:products:all:available=False")
+            
+            return result
         except HTTPException:
             raise
         except Exception as e:
@@ -49,9 +56,50 @@ class ProductService:
         self, skip: int = 0, limit: int = 10, is_available: Optional[bool] = None
     ) -> tuple[list, int]:
         try:
-            return await self.product_repository.get_all_products(
-                skip, limit, is_available
+            # Crear clave de caché basada en los filtros
+            cache_key = f"admin:products:all:available={is_available}"
+            
+            # Intentar obtener del caché
+            cached_data = await RedisClient.get(cache_key)
+            if cached_data:
+                import json
+                data = json.loads(cached_data)
+                # Aplicar paginación en memoria
+                total = data['total']
+                products = data['products'][skip:skip+limit]
+                return products, total
+            
+            # Si no está en caché, consultar DB
+            products, total = await self.product_repository.get_all_products(
+                skip=0, limit=1000, is_available=is_available  # Obtener más para cachear
             )
+            
+            # Serializar productos para caché
+            products_list = [
+                {
+                    'product_id': str(p.product_id),
+                    'name': p.name,
+                    'description': p.description,
+                    'base_price': p.base_price,
+                    'is_available': p.is_available,
+                    'category_id': str(p.category_id) if p.category_id else None,
+                    'image_url': p.image_url,
+                    'created_at': p.created_at.isoformat() if p.created_at else None,
+                    'updated_at': p.updated_at.isoformat() if p.updated_at else None,
+                } for p in products
+            ]
+            
+            # Guardar en caché por 3 minutos (180 segundos)
+            import json
+            await RedisClient.set(
+                cache_key, 
+                json.dumps({'products': products_list, 'total': total}), 
+                ex=180
+            )
+            
+            # Retornar página solicitada
+            return products[skip:skip+limit], total
+            
         except HTTPException:
             raise
         except Exception as e:
@@ -72,7 +120,14 @@ class ProductService:
                     for ing in update_data['ingredients']
                 ]
             
-            return await self.product_repository.update_product(product_id, update_data)
+            result = await self.product_repository.update_product(product_id, update_data)
+            
+            # Invalidar caché de admin products
+            await RedisClient.delete("admin:products:all:available=None")
+            await RedisClient.delete("admin:products:all:available=True")
+            await RedisClient.delete("admin:products:all:available=False")
+            
+            return result
         except HTTPException:
             raise
         except Exception as e:
@@ -80,7 +135,14 @@ class ProductService:
 
     async def delete_product(self, product_id: UUID) -> bool:
         try:
-            return await self.product_repository.delete_product(product_id)
+            result = await self.product_repository.delete_product(product_id)
+            
+            # Invalidar caché de admin products
+            await RedisClient.delete("admin:products:all:available=None")
+            await RedisClient.delete("admin:products:all:available=True")
+            await RedisClient.delete("admin:products:all:available=False")
+            
+            return result
         except HTTPException:
             raise
         except Exception as e:
@@ -199,7 +261,29 @@ class ProductService:
 
     async def check_is_favorite(self, user_id: UUID, product_id: UUID) -> bool:
         try:
-            return await self.product_repository.check_is_favorite(user_id, product_id)
+            # Intentar obtener del caché de Redis primero
+            cache_key = f"{USER_FAVORITES_CACHE_PREFIX}{user_id}"
+            
+            # Verificar si el set de favoritos del usuario existe en caché
+            cached_favorites = await RedisClient.get(cache_key)
+            
+            if cached_favorites is not None:
+                # Si existe en caché, verificar si product_id está en el set
+                import json
+                favorites_set = set(json.loads(cached_favorites))
+                return str(product_id) in favorites_set
+            
+            # Si no está en caché, cargar todos los favoritos del usuario
+            all_favorites = await self.product_repository.get_user_favorites(user_id)
+            favorites_ids = [str(fav.product_id) for fav in all_favorites]
+            
+            # Guardar en caché por 15 minutos (900 segundos)
+            import json
+            await RedisClient.set(cache_key, json.dumps(favorites_ids), ex=900)
+            
+            # Verificar si el producto está en favoritos
+            return str(product_id) in favorites_ids
+            
         except HTTPException:
             raise
         except Exception as e:

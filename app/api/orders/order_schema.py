@@ -4,6 +4,7 @@ from datetime import datetime
 from uuid import UUID
 from typing import Optional, List
 from app.models.orders.order_model import OrderStatus, PaymentType
+from app.models.promotions.promotion_model import DiscountType
 
 
 class UserSimpleSchema(BaseModel):
@@ -46,7 +47,8 @@ class OrderItemCreateSchema(BaseModel):
 class PromotionInfoSchema(BaseModel):
     promotion_id: UUID
     code: str
-    discount: float
+    discount_type: DiscountType  # percentage o fixed_amount
+    discount_value: float  # El valor del descuento (porcentaje o monto)
 
     class Config:
         alias_generator = to_camel
