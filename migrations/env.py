@@ -7,9 +7,6 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 
-# Importa settings desde tu app
-from app.core.settings import settings
-
 # Importa los modelos para que entren al metadata
 from app.models.users.user_model import UserModel
 from app.models.users.user_qr_code_model import UserQRCodeModel
@@ -36,19 +33,20 @@ from app.models.orders.points_used_model import PointsUsedModel
 from app.models.promotions.promotion_model import PromotionModel
 from app.models.promotions.product_promotion_model import ProductPromotionModel
 
-# Carga el .env desde el root del proyecto
+# Carga el .env desde el root del proyecto (solo para desarrollo local)
 ROOT_DIR = Path(__file__).resolve().parents[1]
-load_dotenv(ROOT_DIR / ".env")
+env_file = ROOT_DIR / ".env"
+if env_file.exists():
+    load_dotenv(env_file)
 
-# Usa la URL desde settings
+# Obtén DATABASE_URL directamente de las variables de entorno
 database_url = os.getenv("DATABASE_URL", "").strip()
+
 if not database_url:
-    try:
-        database_url = getattr(settings, "DATABASE_URL", "") or getattr(settings, "DATABASE_URL_EFFECTIVE", "")
-    except Exception:
-        database_url = ""
-if not database_url:
-    raise RuntimeError("DATABASE_URL no configurada. Exporta la URL o configúrala en .env.")
+    raise RuntimeError(
+        "DATABASE_URL not configured. "
+        "Set DATABASE_URL environment variable or configure it in .env file."
+    )
 
 # Alembic config
 config = context.config

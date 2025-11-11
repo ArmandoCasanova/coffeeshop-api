@@ -12,21 +12,17 @@ class Settings(BaseSettings):
     # API Configuration
     API_V1: str
     PROJECT_NAME: str
+    ENV: str = "development"
 
-    # Database Configuration
-    DB_USER: str
-    DB_PASSWORD: str
-    DB_NAME: str
-    DB_HOST: str
-    DB_PORT: int
+    # Database Configuration (Railway/Render provide DATABASE_URL directly)
+    DATABASE_URL: str
 
     # JWT Configuration
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str
 
-    # Redis Configuration
-    REDIS_HOST: str
-    REDIS_PORT: int
+    # Redis Configuration (Railway/Render provide REDIS_URL directly)
+    REDIS_URL: str
 
     # Email Configuration
     SMTP_SERVER: str
@@ -34,16 +30,9 @@ class Settings(BaseSettings):
     SMTP_USERNAME: str
     SMTP_PASSWORD: str
 
+    # Stripe Configuration
     STRIPE_SECRET_KEY: str
-
-
-    @property
-    def DATABASE_URL(self):
-        return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
-
-    @property
-    def REDIS_URL(self):
-        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}"
+    STRIPE_PUBLISHABLE_KEY: str
 
 
 def get_settings():
