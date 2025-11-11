@@ -121,14 +121,37 @@ class AuthRepository:
             CoffeeAppHttpResponse.internal_error()
 
     async def create_password_reset_code(self, code: str, user_id: UUID) -> VerificationCodePasswordResetModel:
-        """Crear nuevo código para reset de contraseña"""
-        try:
-            new_code = VerificationCodePasswordResetModel(code=code, user_id=user_id)
+        """
+        Crear o actualizar código de reset de contraseña para un usuario.
+        Si ya existe un registro previo, se actualiza con un nuevo código.
+        """
+        try:            
+            statement = select(VerificationCodePasswordResetModel).where(
+                VerificationCodePasswordResetModel.user_id == user_id
+            )
+            existing_code = self.session.exec(statement).first()
+
+            if existing_code:                
+                existing_code.code = code
+                existing_code.is_alive = True
+                existing_code.updated_at = datetime.now(timezone.utc)
+                self.session.add(existing_code)
+                self.session.commit()
+                self.session.refresh(existing_code)
+                return existing_code
+            
+            new_code = VerificationCodePasswordResetModel(
+                code=code,
+                user_id=user_id,
+                is_alive=True,
+                created_at=datetime.now(timezone.utc),
+            )
             self.session.add(new_code)
             self.session.commit()
-            self.session.refresh(new_code)
+            self.session.refresh(new_code)            
             return new_code
-        except Exception:
+
+        except Exception as e:            
             CoffeeAppHttpResponse.internal_error()
 
     async def get_verification_code(self, code: str) -> VerificationCodeModel | None:
@@ -159,5 +182,26 @@ class AuthRepository:
             verification_code.is_alive = is_alive
             self.session.add(verification_code)
             self.session.commit()
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+    
+    async def get_password_reset_code(self, code: str) -> VerificationCodePasswordResetModel | None:
+        """Obtener código de verificación por código"""
+        try:
+            statement = select(VerificationCodePasswordResetModel).where(VerificationCodePasswordResetModel.code == code)
+            return self.session.exec(statement).first()
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+            
+    async def update_user_password(self, user_id: UUID, hashed_password: str) -> None:
+        """Actualizar contraseña hasheada del usuario"""
+        try:
+            statement = select(UserModel).where(UserModel.user_id == user_id)
+            user = self.session.exec(statement).first()
+            if user:
+                user.password = hashed_password
+                user.updated_at = datetime.now(timezone.utc)
+                self.session.add(user)
+                self.session.commit()
         except Exception:
             CoffeeAppHttpResponse.internal_error()

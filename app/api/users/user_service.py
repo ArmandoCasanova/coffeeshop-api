@@ -1,6 +1,6 @@
 from uuid import UUID
 from datetime import datetime, timezone
-from sqlmodel import Session
+from sqlmodel import Session, select
 from fastapi import HTTPException
 
 from app.models.users.user_model import UserModel
@@ -90,5 +90,16 @@ class UserService:
         except HTTPException:
             raise
         except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
+    @staticmethod
+    async def get_user_by_email(email: str, session: Session) -> UserModel | bool:
+        try:
+            statement = select(UserModel).where(UserModel.email == email)
+
+            user = session.exec(statement).first()
+
+            return user if user else False
+        except Exception as e:
             CoffeeAppHttpResponse.internal_error()
 
