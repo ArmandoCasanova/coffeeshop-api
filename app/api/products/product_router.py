@@ -109,3 +109,36 @@ async def delete_product(product_id: UUID, session: Session = Depends(get_db)):
     """Eliminar un producto"""
     controller = ProductController(session)
     return await controller.delete_product(product_id)
+
+
+@router.get("/favorites/user/{user_id}/product/{product_id}/check")
+async def check_is_favorite(
+    user_id: UUID,
+    product_id: UUID,
+    session: Session = Depends(get_db)
+):
+    """Verificar si un producto está en favoritos"""
+    controller = ProductController(session)
+    return await controller.check_is_favorite(user_id, product_id)
+
+
+@router.post("/favorites/user/{user_id}/product/{product_id}")
+async def add_favorite(
+    user_id: UUID,
+    product_id: UUID,
+    session: Session = Depends(get_db)
+):
+    """Agregar un producto a favoritos"""
+    controller = ProductController(session)
+    return await controller.add_favorite(user_id, product_id)
+
+
+@router.delete("/favorites/user/{user_id}/product/{product_id}")
+async def remove_favorite(
+    user_id: UUID,
+    product_id: UUID,
+    session: Session = Depends(get_db)
+):
+    """Eliminar un producto de favoritos"""
+    controller = ProductController(session)
+    return await controller.remove_favorite(user_id, product_id)

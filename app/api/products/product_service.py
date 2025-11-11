@@ -196,3 +196,49 @@ class ProductService:
 
             traceback.print_exc()
             CoffeeAppHttpResponse.internal_error()
+
+    async def check_is_favorite(self, user_id: UUID, product_id: UUID) -> bool:
+        try:
+            return await self.product_repository.check_is_favorite(user_id, product_id)
+        except HTTPException:
+            raise
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            CoffeeAppHttpResponse.internal_error()
+
+    async def add_favorite(self, user_id: UUID, product_id: UUID) -> bool:
+        try:
+            product = await self.product_repository.get_product_by_id(product_id)
+            if not product:
+                raise HTTPException(status_code=404, detail="Product not found")
+            
+            result = await self.product_repository.add_favorite(user_id, product_id)
+            
+            if result:
+                cache_key = f"{USER_FAVORITES_CACHE_PREFIX}{user_id}"
+                await RedisClient.delete(cache_key)
+            
+            return result
+        except HTTPException:
+            raise
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            CoffeeAppHttpResponse.internal_error()
+
+    async def remove_favorite(self, user_id: UUID, product_id: UUID) -> bool:
+        try:
+            result = await self.product_repository.remove_favorite(user_id, product_id)
+            
+            if result:
+                cache_key = f"{USER_FAVORITES_CACHE_PREFIX}{user_id}"
+                await RedisClient.delete(cache_key)
+            
+            return result
+        except HTTPException:
+            raise
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            CoffeeAppHttpResponse.internal_error()
