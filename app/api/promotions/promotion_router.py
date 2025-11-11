@@ -9,7 +9,7 @@ from app.api.promotions.promotion_schmena import (
     PromotionCreateSchema,
     PromotionUpdateSchema,
     PromotionResponseSchema,
-    ProductPromotionListResponseSchema,
+    PromotionListResponseSchema,
 )
 
 router = APIRouter(prefix="/promotions", tags=["Promotions"])
@@ -22,15 +22,15 @@ async def create_promotion(
     return await controller.create_promotion(promotion_data)
 
 
-
-@router.get("/", response_model=ProductPromotionListResponseSchema) 
-async def get_all_applied_promotions( 
+@router.get("/", response_model=PromotionListResponseSchema)
+async def get_all_promotions(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(10, ge=1, le=100, description="Items per page"),
+    is_active: Optional[bool] = Query(None, description="Filter by active status"),
     session: Session = Depends(get_db),
 ):
     controller = PromotionController(session)
-    return await controller.get_all_applied_promotions(page, page_size)
+    return await controller.get_all_promotions(page, page_size, is_active)
 
 
 @router.get("/{promotion_id}", response_model=PromotionResponseSchema)

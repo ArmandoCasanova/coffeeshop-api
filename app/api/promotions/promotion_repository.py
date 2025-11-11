@@ -32,6 +32,49 @@ class PromotionRepository:
         except Exception:
             raise
 
+    async def get_all_promotions(
+        self, skip: int = 0, limit: int = 10, is_active: Optional[bool] = None
+    ) -> tuple[List[PromotionModel], int]:
+        """
+        Obtiene todas las promociones de la tabla promotions con paginación.
+        """
+        try:
+            query = select(PromotionModel).order_by(PromotionModel.created_at.desc())
+            
+            # Filtrar por estado activo si se especifica
+            if is_active is not None:
+                now = datetime.utcnow()
+                if is_active:
+                    query = query.where(
+                        PromotionModel.start_date <= now,
+                        PromotionModel.end_date >= now
+                    )
+                else:
+                    query = query.where(
+                        (PromotionModel.start_date > now) | (PromotionModel.end_date < now)
+                    )
+            
+            # Contar total
+            total_query = select(func.count()).select_from(PromotionModel)
+            if is_active is not None:
+                now = datetime.utcnow()
+                if is_active:
+                    total_query = total_query.where(
+                        PromotionModel.start_date <= now,
+                        PromotionModel.end_date >= now
+                    )
+                else:
+                    total_query = total_query.where(
+                        (PromotionModel.start_date > now) | (PromotionModel.end_date < now)
+                    )
+            
+            total = self.session.exec(total_query).one()
+            results = self.session.exec(query.offset(skip).limit(limit)).all()
+            
+            return list(results), total
+        except Exception:
+            raise
+
     async def get_all_applied_promotions(
         self, skip: int = 0, limit: int = 10
     ) -> tuple[List, int]:
