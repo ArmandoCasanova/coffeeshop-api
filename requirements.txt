@@ -50,3 +50,4 @@ websockets==15.0.1
 aiofiles 
 stripe
 openpyxl
+reportlab
