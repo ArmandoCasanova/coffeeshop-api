@@ -16,7 +16,7 @@ from app.api.products.product_schema import (
 router = APIRouter(prefix="/products", tags=["Products"])
 
 
-@router.post("/", response_model=ProductResponseSchema, status_code=201)
+@router.post("", response_model=ProductResponseSchema, status_code=201)
 async def create_product(
     product_data: ProductCreateSchema, session: Session = Depends(get_db)
 ):
@@ -25,7 +25,7 @@ async def create_product(
     return await controller.create_product(product_data)
 
 
-@router.get("/", response_model=ProductListResponseSchema)
+@router.get("", response_model=ProductListResponseSchema)
 async def get_all_products(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(10, ge=1, le=100, description="Items per page"),
