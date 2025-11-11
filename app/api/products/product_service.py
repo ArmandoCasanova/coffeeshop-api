@@ -21,6 +21,16 @@ class ProductService:
     async def create_product(self, product_data: ProductCreateSchema) -> object:
         try:
             product_dict = product_data.model_dump()
+            
+            if 'ingredients' in product_dict:
+                product_dict['ingredients'] = [
+                    {
+                        'ingredient_id': ing['ingredient_id'],
+                        'quantity_required': ing['quantity_required']
+                    }
+                    for ing in product_dict['ingredients']
+                ]
+            
             return await self.product_repository.create_product(product_dict)
         except HTTPException:
             raise
@@ -52,6 +62,16 @@ class ProductService:
     ) -> Optional[object]:
         try:
             update_data = product_data.model_dump(exclude_unset=True)
+            
+            if 'ingredients' in update_data and update_data['ingredients'] is not None:
+                update_data['ingredients'] = [
+                    {
+                        'ingredient_id': ing['ingredient_id'],
+                        'quantity_required': ing['quantity_required']
+                    }
+                    for ing in update_data['ingredients']
+                ]
+            
             return await self.product_repository.update_product(product_id, update_data)
         except HTTPException:
             raise
