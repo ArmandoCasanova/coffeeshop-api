@@ -209,13 +209,20 @@ class ProductRepository:
             product = self.session.exec(statement).first()
 
             if not product:
-                return False
+                raise HTTPException(status_code=404, detail="Producto no encontrado")
 
-            self.session.delete(product)
+            # Marcar como no disponible en lugar de eliminar (soft delete)
+            product.is_available = False
+            self.session.add(product)
             self.session.commit()
+            self.session.refresh(product)
             return True
-        except Exception:
+        except HTTPException:
+            raise
+        except Exception as e:
             self.session.rollback()
+            import traceback
+            traceback.print_exc()
             raise
 
     def get_popular_products(
