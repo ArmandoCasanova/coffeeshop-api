@@ -23,13 +23,7 @@ def upgrade() -> None:
     """Upgrade schema."""
     # ### Definición manual de la migración ###
     
-    # 1. Crear el tipo ENUM para el estado
-    # Usamos sa.Enum para compatibilidad; 'report_status' es el nombre en PostgreSQL
-    report_status_enum = sa.Enum(
-        'en_proceso', 'generado', 'error', 
-        name='reportstatus' # Alembic/SQLAlchemy prefiere nombres en minúsculas para ENUMs
-    )
-    report_status_enum.create(op.get_bind(), checkfirst=True)
+    # El tipo ENUM se crea automáticamente al crear la tabla si no existe
 
     # 2. Crear la tabla 'reports'
     op.create_table(
