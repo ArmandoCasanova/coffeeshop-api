@@ -29,10 +29,18 @@ class PaymentController:
     async def create_setup_intent(self, user_id: UUID):
         try:
             customer_id = await self.payment_service.get_customer_id_with_user_id(user_id)
+            if not customer_id:
+                raise HTTPException(
+                    status_code=404, 
+                    detail="No se encontró un customer de Stripe para este usuario. Por favor, contacta a soporte."
+                )
             setup_intent = PaymentService.create_setup_intent(customer_id)
             return {"client_secret": setup_intent.client_secret}
+        except HTTPException:
+            raise
         except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            print(f"Error al crear setup intent: {e}")
+            raise HTTPException(status_code=500, detail=f"Error al crear configuración de pago: {str(e)}")
 
     @staticmethod
     def attach_payment_method(payment_method_id: str, customer_id: str):

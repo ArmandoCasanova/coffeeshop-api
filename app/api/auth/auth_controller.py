@@ -1,5 +1,5 @@
 from sqlmodel import Session
-from fastapi import HTTPException, Response
+from fastapi import HTTPException, Response, BackgroundTasks
 from pydantic import EmailStr
 from uuid import UUID
 
@@ -21,19 +21,27 @@ class AuthController:
         self.payment_service = PaymentService(session)
         self.user_service = UserService(session)
 
-    async def signup(self, data: SignupSchema) -> AuthResponseSchema:
+    async def signup(self, data: SignupSchema, background_tasks: BackgroundTasks) -> AuthResponseSchema:
         """
         Registro de usuario con generación y envío de código de verificación
         """
         try:
             # Crear usuario (incluye validación de email existente)
             user = await self.auth_service.signup_user(data)
-            stripe_customer = self.payment_service.create_stripe_customer(user.user_id)
+            
+            # Intentar crear Stripe customer (si falla, solo loguear el error)
+            try:
+                stripe_customer = self.payment_service.create_stripe_customer(user.user_id)
+            except Exception as stripe_error:
+                print(f"Error al crear Stripe customer: {stripe_error}")
+                # Continuar con el signup aunque falle Stripe
+            
             # Generar y crear código de verificación
             verification_code = await self.auth_service.generate_and_create_verification_code(user.user_id)
             
-            # Enviar email con código de verificación
-            await EmailService.send_verification_email(
+            # Enviar email con código de verificación EN BACKGROUND (no bloqueante)
+            background_tasks.add_task(
+                EmailService.send_verification_email,
                 to_name=user.name.capitalize(),
                 to_email=user.email,
                 verification_code=verification_code.code,
