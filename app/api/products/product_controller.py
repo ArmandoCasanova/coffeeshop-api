@@ -186,3 +186,37 @@ class ProductController:
                 exc_info=True,
             )
             CoffeeAppHttpResponse.internal_error()
+
+    async def check_is_favorite(self, user_id: UUID, product_id: UUID) -> dict:
+        try:
+            is_favorite = await self.service.check_is_favorite(user_id, product_id)
+            return {"is_favorite": is_favorite}
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"❌ Error in controller check_is_favorite: {str(e)}", exc_info=True)
+            CoffeeAppHttpResponse.internal_error()
+
+    async def add_favorite(self, user_id: UUID, product_id: UUID) -> dict:
+        try:
+            result = await self.service.add_favorite(user_id, product_id)
+            if not result:
+                return {"message": "Product already in favorites", "added": False}
+            return {"message": "Product added to favorites", "added": True}
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"❌ Error in controller add_favorite: {str(e)}", exc_info=True)
+            CoffeeAppHttpResponse.internal_error()
+
+    async def remove_favorite(self, user_id: UUID, product_id: UUID) -> dict:
+        try:
+            result = await self.service.remove_favorite(user_id, product_id)
+            if not result:
+                CoffeeAppHttpResponse.not_found(message="Favorite not found")
+            return {"message": "Product removed from favorites", "removed": True}
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"❌ Error in controller remove_favorite: {str(e)}", exc_info=True)
+            CoffeeAppHttpResponse.internal_error()
