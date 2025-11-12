@@ -54,10 +54,32 @@ class OrderService:
 
             promotion_discount = 0
             if order_data.promotion:
-                if order_data.promotion.discount_type == "percentage":
-                    promotion_discount = total_amount * (order_data.promotion.discount_value / 100)
-                elif order_data.promotion.discount_type == "fixed_amount":
-                    promotion_discount = order_data.promotion.discount_value
+                try:
+                    from app.models.promotions.promotion_model import DiscountType as PromotionDiscountType
+
+                    discount_type = order_data.promotion.discount_type
+                    discount_value = float(order_data.promotion.discount_value)
+
+                    if isinstance(discount_type, PromotionDiscountType):
+                        if discount_type == PromotionDiscountType.percentage:
+                            promotion_discount = total_amount * (discount_value / 100)
+                        elif discount_type == PromotionDiscountType.fixed_amount:
+                            promotion_discount = discount_value
+                    else:
+                        dt_val = str(discount_type)
+                        if dt_val == "percentage":
+                            promotion_discount = total_amount * (discount_value / 100)
+                        elif dt_val == "fixed_amount":
+                            promotion_discount = discount_value
+                except Exception:
+                    # Fallback: try numeric operations defensively
+                    try:
+                        if str(getattr(order_data.promotion, 'discount_type', '')).lower() == 'percentage':
+                            promotion_discount = total_amount * (float(order_data.promotion.discount_value) / 100)
+                        else:
+                            promotion_discount = float(order_data.promotion.discount_value)
+                    except Exception:
+                        promotion_discount = 0
                 
                 total_amount -= promotion_discount
 
