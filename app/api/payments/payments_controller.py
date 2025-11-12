@@ -28,12 +28,13 @@ class PaymentController:
 
     async def create_setup_intent(self, user_id: UUID):
         try:
-            customer_id = await self.payment_service.get_customer_id_with_user_id(user_id)
-            if not customer_id:
-                raise HTTPException(
-                    status_code=404, 
-                    detail="No se encontró un customer de Stripe para este usuario. Por favor, contacta a soporte."
-                )
+            try:
+                customer_id = await self.payment_service.get_customer_id_with_user_id(user_id)
+            except HTTPException as he:
+                if he.status_code == 404:
+                    customer_id = self.payment_service.ensure_customer_for_user(str(user_id))
+                else:
+                    raise
             setup_intent = PaymentService.create_setup_intent(customer_id)
             return {"client_secret": setup_intent.client_secret}
         except HTTPException:
@@ -52,7 +53,13 @@ class PaymentController:
 
     async def list_payment_methods(self, user_id: UUID):
         try:
-            customer_id = await self.payment_service.get_customer_id_with_user_id(user_id)
+            try:
+                customer_id = await self.payment_service.get_customer_id_with_user_id(user_id)
+            except HTTPException as he:
+                if he.status_code == 404:
+                    return {"data": []}
+                else:
+                    raise
             result = PaymentService.list_payment_methods(customer_id)
             return {"data": result.data}
         except Exception as e:
@@ -79,5 +86,19 @@ class PaymentController:
     def create_stripe_customer(self, user_id: str):
         try:
             return self.payment_service.create_stripe_customer(user_id)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    def ensure_customer(self, user_id: str):
+        try:
+            return {"customer_id": self.payment_service.ensure_customer_for_user(user_id)}
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    def create_ephemeral_key(self, user_id: str, api_version: str | None = None):
+        try:
+            customer_id = self.payment_service.ensure_customer_for_user(user_id)
+            ek = PaymentService.create_ephemeral_key(customer_id, api_version)
+            return ek
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))

@@ -27,6 +27,22 @@ class PaymentService:
     def create_customer():
         return stripe.Customer.create()
 
+    def ensure_customer_for_user(self, user_id: str):
+        try:
+            statement = select(StripeCustomerModel).where(StripeCustomerModel.user_id == user_id)
+            result = self.session.exec(statement)
+            customer = result.first()
+            if customer:
+                return customer.customer_id
+            stripe_customer = stripe.Customer.create()
+            new_customer = StripeCustomerModel(user_id=user_id, customer_id=stripe_customer["id"])
+            self.session.add(new_customer)
+            self.session.commit()
+            self.session.refresh(new_customer)
+            return new_customer.customer_id
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error al asegurar customer en Stripe: {e}")
+
     @staticmethod
     def create_setup_intent(customer_id: str):
         return stripe.SetupIntent.create(
@@ -73,6 +89,15 @@ class PaymentService:
     @staticmethod
     def delete_payment_method(payment_method_id: str):
         return stripe.PaymentMethod.detach(payment_method_id)
+    
+    @staticmethod
+    def create_ephemeral_key(customer_id: str, api_version: str | None = None):
+        try:
+            # Default to a recent API version if none provided
+            version = api_version or "2024-06-20"
+            return stripe.EphemeralKey.create({"customer": customer_id}, stripe_version=version)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"No se pudo crear ephemeral key: {e}")
         
 
     def create_stripe_customer(self, user_id: str):

@@ -1,5 +1,5 @@
 # app/api/routes/payment_router.py
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from pydantic import BaseModel
 from app.api.payments.payments_controller import PaymentController
 from app.api.payments.payments_schema import PaymentRequest, PayWithSavedMethodRequest,AttachPaymentMethodRequest
@@ -46,3 +46,38 @@ async def pay_with_saved_method(data: PayWithSavedMethodRequest, session: Sessio
 @router.delete("/delete-payment-method/{payment_method_id}")
 async def delete_payment_method(payment_method_id: str):
     return PaymentController.delete_payment_method(payment_method_id)
+
+
+# Ensure a Stripe customer exists for the given user
+@router.get("/customer/{user_id}")
+async def get_or_create_customer(user_id: str, session: Session = Depends(get_db)):
+    controller = PaymentController(session)
+    return controller.ensure_customer(user_id)
+
+
+# Create an ephemeral key for CustomerSheet/PaymentSheet
+@router.post("/ephemeral-key/{user_id}")
+async def create_ephemeral_key(
+    user_id: str,
+    session: Session = Depends(get_db),
+    stripe_version: str | None = Header(default=None, alias="Stripe-Version"),
+):
+    controller = PaymentController(session)
+    return controller.create_ephemeral_key(user_id, stripe_version)
+
+
+# Lightweight mobile error logging to help debug release crashes
+class MobileLog(BaseModel):
+    message: str
+    stack: str | None = None
+    context: dict | None = None
+
+
+@router.post("/mobile-error-log")
+async def mobile_error_log(payload: MobileLog):
+    print("[MOBILE_ERROR]", payload.message)
+    if payload.stack:
+        print(payload.stack)
+    if payload.context:
+        print(payload.context)
+    return {"ok": True}
