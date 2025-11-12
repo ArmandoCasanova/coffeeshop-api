@@ -27,8 +27,6 @@ async def signup(data: SignupSchema, background_tasks: BackgroundTasks, session:
 async def signin(data: LoginSchema, session: Session = Depends(get_db)):
     """Iniciar sesión"""
     try:
-        print("email"+ data.email)
-        print("pass"+ data.password)
         controller = AuthController(session)
         return await controller.login(data.email, data.password)
     except HTTPException:
