@@ -35,7 +35,7 @@ class PaymentController:
                     detail="No se encontró un customer de Stripe para este usuario. Por favor, contacta a soporte."
                 )
             setup_intent = PaymentService.create_setup_intent(customer_id)
-            return {"client_secret": setup_intent.client_secret}
+            return {"client_secret": setup_intent.client_secret, "setup_intent_id": setup_intent.id}
         except HTTPException:
             raise
         except Exception as e:
