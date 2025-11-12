@@ -11,14 +11,13 @@ from app.constants.email_template import new_user_verification_code_email_tempal
 
 class EmailService:
     @staticmethod
-    async def send_verification_email(
+    def send_verification_email(
         to_name: str, to_email: str, verification_code: str
     ):
         smtp_server = settings.SMTP_SERVER
         smtp_port = settings.SMTP_PORT
         smtp_username = settings.SMTP_USERNAME
         smtp_password = settings.SMTP_PASSWORD
-        verification_code = verification_code
 
         msg = MIMEMultipart("alternative")
         msg["From"] = smtp_username
@@ -31,6 +30,7 @@ class EmailService:
             user_name=to_name, code=verification_code
         )
 
+        mail = None
         try:
             first_part = MIMEText(text, "plain")
             second_part = MIMEText(html, "html")
@@ -39,32 +39,30 @@ class EmailService:
             msg.attach(second_part)
 
             mail = smtplib.SMTP(smtp_server, smtp_port)
-
             mail.ehlo()
-
             mail.starttls()
-
             mail.login(smtp_username, smtp_password)
             mail.sendmail(smtp_username, to_email, msg.as_string())
 
-        except smtplib.SMTPException:
-            CoffeeAppHttpResponse.internal_error()
-
-        except Exception:
-            CoffeeAppHttpResponse.internal_error()
+        except Exception as e:
+            print(f"Email error: {e}")
 
         finally:
-            mail.quit()
+            if mail:
+                try:
+                    mail.quit()
+                except:
+                    pass
+
 
     @staticmethod
-    async def send_conection_code_email(
+    def send_conection_code_email(
         to_name: str, to_email: str, verification_code: str
     ):
         smtp_server = settings.SMTP_SERVER
         smtp_port = settings.SMTP_PORT
         smtp_username = settings.SMTP_USERNAME
         smtp_password = settings.SMTP_PASSWORD
-        verification_code = verification_code
 
         msg = MIMEMultipart("alternative")
         msg["From"] = smtp_username
@@ -77,6 +75,7 @@ class EmailService:
             user_name=to_name, code=verification_code
         )
 
+        mail = None
         try:
             first_part = MIMEText(text, "plain")
             second_part = MIMEText(html, "html")
@@ -85,32 +84,29 @@ class EmailService:
             msg.attach(second_part)
 
             mail = smtplib.SMTP(smtp_server, smtp_port)
-
             mail.ehlo()
-
             mail.starttls()
-
             mail.login(smtp_username, smtp_password)
             mail.sendmail(smtp_username, to_email, msg.as_string())
 
-        except smtplib.SMTPException:
-            CoffeeAppHttpResponse.internal_error()
-
         except Exception as e:
-            CoffeeAppHttpResponse.internal_error()
+            print(f"Email error: {e}")
 
         finally:
-            mail.quit()
+            if mail:
+                try:
+                    mail.quit()
+                except:
+                    pass
 
     @staticmethod
-    async def send_password_reset_code_email(
+    def send_password_reset_code_email(
         to_name: str, to_email: str, verification_code: str
     ):
         smtp_server = settings.SMTP_SERVER
         smtp_port = settings.SMTP_PORT
         smtp_username = settings.SMTP_USERNAME
         smtp_password = settings.SMTP_PASSWORD
-        verification_code = verification_code
 
         msg = MIMEMultipart("alternative")
         msg["From"] = smtp_username
@@ -123,6 +119,7 @@ class EmailService:
             user_name=to_name, code=verification_code
         )
 
+        mail = None
         try:
             first_part = MIMEText(text, "plain")
             second_part = MIMEText(html, "html")
@@ -131,20 +128,19 @@ class EmailService:
             msg.attach(second_part)
 
             mail = smtplib.SMTP(smtp_server, smtp_port)
-
             mail.ehlo()
-
             mail.starttls()
-
             mail.login(smtp_username, smtp_password)
             mail.sendmail(smtp_username, to_email, msg.as_string())
 
-        except smtplib.SMTPException:
-            CoffeeAppHttpResponse.internal_error()
-
-        except Exception:
-            CoffeeAppHttpResponse.internal_error()
+        except Exception as e:
+            print(f"Email error: {e}")
 
         finally:
-            mail.quit()
+            if mail:
+                try:
+                    mail.quit()
+                except:
+                    pass
+
 
