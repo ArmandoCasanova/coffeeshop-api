@@ -45,7 +45,7 @@ class EmailService:
             mail.sendmail(smtp_username, to_email, msg.as_string())
 
         except Exception as e:
-            print(f"Error enviando email: {e}")
+            print(f"Email error: {e}")
 
         finally:
             if mail:
@@ -53,6 +53,7 @@ class EmailService:
                     mail.quit()
                 except:
                     pass
+
 
     @staticmethod
     def send_conection_code_email(
@@ -89,7 +90,7 @@ class EmailService:
             mail.sendmail(smtp_username, to_email, msg.as_string())
 
         except Exception as e:
-            print(f"Error enviando email: {e}")
+            print(f"Email error: {e}")
 
         finally:
             if mail:
@@ -133,7 +134,7 @@ class EmailService:
             mail.sendmail(smtp_username, to_email, msg.as_string())
 
         except Exception as e:
-            print(f"Error enviando email: {e}")
+            print(f"Email error: {e}")
 
         finally:
             if mail:
