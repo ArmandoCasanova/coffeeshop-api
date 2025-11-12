@@ -15,8 +15,9 @@ async def create_payment_intent(payment_data: PaymentRequest):
 
 
 @router.post("/create-customer/{user_id}")
-async def create_customer(user_id: str):
-    return PaymentController.create_customer(user_id)
+async def create_customer(user_id: str, session: Session = Depends(get_db)):
+    controller = PaymentController(session)
+    return await controller.create_stripe_customer(user_id)
 
 
 @router.post("/create-setup-intent/{user_id}")
