@@ -5,8 +5,8 @@ from fastapi import HTTPException
 from uuid import UUID
 import logging
 
-from app.api.promotions.promotion_service import PromotionService
-from app.api.promotions.promotion_schmena import (
+from app.api.promotions_web.promotionweb_service import PromotionService
+from app.api.promotions_web.promotionweb_schema import (
     ProductPromotionDetailSchema,
     ProductPromotionListResponseSchema,
     PromotionCreateSchema,
@@ -50,35 +50,16 @@ class PromotionController:
     ) -> PromotionListResponseSchema:
         try:
             skip = (page - 1) * page_size
+            
             promotions, total = await self.service.get_all_promotions(
                 skip, page_size, is_active
             )
+            
             promotion_list = [
-                PromotionResponseSchema.model_validate(promo)
-                for promo in promotions
+                PromotionResponseSchema.model_validate(promo) for promo in promotions
             ]
+            
             return PromotionListResponseSchema(
-                promotions=promotion_list, total=total, page=page, page_size=page_size
-            )
-        except HTTPException:
-            raise
-        except Exception as e:
-            print(e)
-            CoffeeAppHttpResponse.internal_error()
-
-    async def get_all_applied_promotions(
-        self, page: int = 1, page_size: int = 10
-    ) -> ProductPromotionListResponseSchema:
-        try:
-            skip = (page - 1) * page_size
-            applied_promotions, total = await self.service.get_all_applied_promotions(
-                skip, page_size
-            )
-            promotion_list = [
-                ProductPromotionDetailSchema.model_validate(promo) 
-                for promo in applied_promotions
-            ]
-            return ProductPromotionListResponseSchema(
                 promotions=promotion_list, total=total, page=page, page_size=page_size
             )
         except HTTPException:

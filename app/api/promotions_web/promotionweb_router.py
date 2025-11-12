@@ -4,17 +4,18 @@ from sqlmodel import Session
 from uuid import UUID
 
 from app.core.database import get_db
-from app.api.promotions.promotion_controller import PromotionController
-from app.api.promotions.promotion_schmena import (
+from app.api.promotions_web.promotionweb_controller import PromotionController
+from app.api.promotions_web.promotionweb_schema import (
     PromotionCreateSchema,
+    PromotionListResponseSchema,
     PromotionUpdateSchema,
     PromotionResponseSchema,
-    PromotionListResponseSchema,
+    ProductPromotionListResponseSchema,
 )
 
-router = APIRouter(prefix="/promotions", tags=["Promotions"])
+router = APIRouter(prefix="/promotionsweb", tags=["PromotionsWeb"])
 
-@router.post("", response_model=PromotionResponseSchema, status_code=201)
+@router.post("/", response_model=PromotionResponseSchema, status_code=201)
 async def create_promotion(
     promotion_data: PromotionCreateSchema, session: Session = Depends(get_db)
 ):
@@ -22,7 +23,8 @@ async def create_promotion(
     return await controller.create_promotion(promotion_data)
 
 
-@router.get("", response_model=PromotionListResponseSchema)
+
+@router.get("/", response_model=PromotionListResponseSchema)
 async def get_all_promotions(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(10, ge=1, le=100, description="Items per page"),
@@ -30,6 +32,7 @@ async def get_all_promotions(
     session: Session = Depends(get_db),
 ):
     controller = PromotionController(session)
+    # Llamamos al nuevo método del controlador
     return await controller.get_all_promotions(page, page_size, is_active)
 
 

@@ -4,6 +4,7 @@ from datetime import datetime
 from uuid import UUID
 from typing import Optional, List
 from app.models.orders.order_model import OrderStatus, PaymentType
+from app.models.promotions.promotion_model import DiscountType
 
 
 class UserSimpleSchema(BaseModel):
@@ -46,7 +47,8 @@ class OrderItemCreateSchema(BaseModel):
 class PromotionInfoSchema(BaseModel):
     promotion_id: UUID
     code: str
-    discount: float
+    discount_type: DiscountType
+    discount_value: float
 
     class Config:
         alias_generator = to_camel
@@ -57,6 +59,7 @@ class OrderCreateSchema(BaseModel):
     payment_type: PaymentType
     items: List[OrderItemCreateSchema]
     promotion: Optional[PromotionInfoSchema] = None
+    points_used: Optional[float] = 0.0  # Puntos que el usuario quiere usar
 
     class Config:
         alias_generator = to_camel
@@ -70,6 +73,8 @@ class OrderResponseSchema(BaseModel):
     order_date: datetime
     status: OrderStatus
     total_amount: float
+    points_earned: float = 0.0
+    points_used: float = 0.0
     payment_type: PaymentType
     items_summary_json: list
 

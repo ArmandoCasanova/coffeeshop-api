@@ -19,6 +19,7 @@ class OrderRepository:
         folio: str,
         total_amount: float,
         points_earned: float,
+        points_used: float,
         payment_type,
         items_summary_json: list,
     ) -> OrderModel:
@@ -29,6 +30,7 @@ class OrderRepository:
             status=OrderStatus.pending,
             total_amount=total_amount,
             points_earned=points_earned,
+            points_used=points_used,
             payment_type=payment_type,
             items_summary_json=items_summary_json,
         )

@@ -9,15 +9,20 @@ from fastapi.staticfiles import StaticFiles
 # Routers
 from app.api.auth.auth_router import router as auth_router
 from app.api.categories.category_router import router as category_router
+from app.api.customization.customization_router import router as customization_router
 from app.api.dashboard.dashboard_router import router as dashboard_router
 from app.api.products.product_router import router as product_router
 from app.api.ingredients.ingredient_router import router as ingredient_router
 from app.api.orders.order_router import router as orders_router
 from app.api.promotions.promotion_router import router as promotion_router
+from app.api.promotions_web.promotionweb_router import router as promotion_router_web
 from app.api.payments.payments_router import router as payments_router
 from app.api.clients.client_router import router as client_router
 from app.api.users.user_router import router as user_router
+from app.api.reports.report_router import router as report_router
+
 from app.api.notifications.notification_router import router as notifications_router
+from app.api.points.points_router import router as points_router
 
 
 # Configuración
@@ -51,41 +56,41 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
-origins = [
-    "http://localhost:5173",
-]
 
 # Middleware CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    
+    expose_headers=["Content-Disposition"]
 )
 
 
-# Manejo global de excepciones HTTP
 @app.exception_handler(HTTPException)
 async def http_exception_handler(_, exc: HTTPException):
     return JSONResponse(status_code=exc.status_code, content=exc.detail)
 
 
-# Incluir routers con prefijos y tags
 app.include_router(auth_router, prefix=settings.API_V1, tags=["Auth"])
 app.include_router(product_router, prefix=settings.API_V1, tags=["Products"])
 app.include_router(ingredient_router, prefix=settings.API_V1, tags=["Ingredients"])
+app.include_router(customization_router, prefix=settings.API_V1, tags=["Customization"])
 app.include_router(dashboard_router, prefix=settings.API_V1, tags=["Dashboard"])
 app.include_router(orders_router, prefix=settings.API_V1, tags=["Orders"])
 app.include_router(category_router, prefix=settings.API_V1, tags=["Categories"])
 app.include_router(promotion_router, prefix=settings.API_V1, tags=["Promotions"])
+app.include_router(promotion_router_web, prefix=settings.API_V1, tags=["PromotionsWeb"])
 app.include_router(payments_router, prefix=settings.API_V1, tags=["Payments"])
 app.include_router(client_router, prefix=settings.API_V1, tags=["Clients"])
 app.include_router(user_router, prefix=settings.API_V1, tags=["Users"])
+app.include_router(report_router, prefix=settings.API_V1, tags=["Reports"])
 app.include_router(notifications_router, prefix=settings.API_V1, tags=["Notifications"])
+app.include_router(points_router, prefix=settings.API_V1, tags=["Points"])
 
 
-# Endpoint raíz de prueba
 @app.get("/")
 def read_root():
     return {"message": "Welcome to CoffeeShop API ☕"}

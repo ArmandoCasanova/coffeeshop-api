@@ -35,84 +35,41 @@ class PromotionRepository:
     async def get_all_promotions(
         self, skip: int = 0, limit: int = 10, is_active: Optional[bool] = None
     ) -> tuple[List[PromotionModel], int]:
-        """
-        Obtiene todas las promociones de la tabla promotions con paginación.
-        """
         try:
-            query = select(PromotionModel).order_by(PromotionModel.created_at.desc())
-            
-            # Filtrar por estado activo si se especifica
+            query = select(PromotionModel)
+            total_query = select(func.count(PromotionModel.promotion_id))
+
             if is_active is not None:
                 now = datetime.utcnow()
                 if is_active:
                     query = query.where(
                         PromotionModel.start_date <= now,
-                        PromotionModel.end_date >= now
+                        PromotionModel.end_date >= now,
+                    )
+                    total_query = total_query.where(
+                        PromotionModel.start_date <= now,
+                        PromotionModel.end_date >= now,
                     )
                 else:
                     query = query.where(
-                        (PromotionModel.start_date > now) | (PromotionModel.end_date < now)
+                        (PromotionModel.start_date > now)
+                        | (PromotionModel.end_date < now)
                     )
-            
-            # Contar total
-            total_query = select(func.count()).select_from(PromotionModel)
-            if is_active is not None:
-                now = datetime.utcnow()
-                if is_active:
                     total_query = total_query.where(
-                        PromotionModel.start_date <= now,
-                        PromotionModel.end_date >= now
+                        (PromotionModel.start_date > now)
+                        | (PromotionModel.end_date < now)
                     )
-                else:
-                    total_query = total_query.where(
-                        (PromotionModel.start_date > now) | (PromotionModel.end_date < now)
-                    )
+
+            query = query.order_by(PromotionModel.start_date.desc())
             
             total = self.session.exec(total_query).one()
             results = self.session.exec(query.offset(skip).limit(limit)).all()
-            
-            return list(results), total
-        except Exception:
-            raise
 
-    async def get_all_applied_promotions(
-        self, skip: int = 0, limit: int = 10
-    ) -> tuple[List, int]:
-        """
-        Obtiene una lista paginada de promociones aplicadas a productos,
-        uniendo las tablas products, promotions y product_promotions.
-        """
-        try:
-            query = (
-                select(
-                    ProductModel.product_id,
-                    ProductModel.base_price, 
-                    PromotionModel.promotion_id,
-                    PromotionModel.discount_type,
-                    PromotionModel.discount_value,
-                    PromotionModel.start_date,
-                    PromotionModel.end_date,
-                )
-                .join(
-                    ProductPromotionModel,
-                    ProductModel.product_id == ProductPromotionModel.product_id,
-                )
-                .join(
-                    PromotionModel,
-                    PromotionModel.promotion_id == ProductPromotionModel.promotion_id,
-                )
-                .order_by(ProductModel.product_id, PromotionModel.start_date)
-            )
-
-            total_query = select(func.count(ProductPromotionModel.product_id))
-
-            total = self.session.exec(total_query).one()
-            results = self.session.exec(query.offset(skip).limit(limit)).all()
-            
             return list(results), total
         except Exception:
             self.session.rollback()
             raise
+
 
     async def update_promotion(
         self, promotion_id: UUID, update_data: dict

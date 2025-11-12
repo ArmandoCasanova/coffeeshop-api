@@ -10,11 +10,12 @@ COPY ./requirements.txt /app/requirements.txt
 # Install dependencies
 RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
 
-# Copy the rest of the application into the container
-COPY ./app /app/app
+# Copy the entire application into the container
+COPY . /app
 
 # Expose the port where FastAPI will run
 EXPOSE 8000
 
-# Command to run the FastAPI server with Uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--reload"]
+# Command to run migrations and start the server
+# Railway provides $PORT at runtime, defaults to 8000 for local development
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2"]

@@ -16,7 +16,7 @@ from app.api.notifications.notification_schema import (
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
 
-@router.get("/", response_model=NotificationListResponse)
+@router.get("", response_model=NotificationListResponse)
 async def list_notifications(
     page: int = 1,
     page_size: int = 10,
@@ -28,7 +28,7 @@ async def list_notifications(
     return await controller.get_notifications(current_user.user_id, page, page_size)
 
 
-@router.post("/", response_model=NotificationResponseSchema)
+@router.post("", response_model=NotificationResponseSchema)
 async def create_notification(
     notification_data: NotificationCreateSchema,
     current_user: UserModel = Depends(get_current_user),
