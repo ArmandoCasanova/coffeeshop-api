@@ -155,13 +155,17 @@ class ProductService:
         try:
             cache_key = f"{USER_FAVORITES_CACHE_PREFIX}{user_id}"
             cached_data = await RedisClient.get_json(cache_key)
+            
             if cached_data:
-                product_ids = cached_data.get("product_ids", [])
-                if product_ids:
-                    products = self.product_repository.get_products_by_ids(
-                        product_ids, is_available=True
-                    )
-                    return products[:limit]
+                if isinstance(cached_data, list):
+                    await RedisClient.delete(cache_key)
+                elif isinstance(cached_data, dict):
+                    product_ids = cached_data.get("product_ids", [])
+                    if product_ids:
+                        products = self.product_repository.get_products_by_ids(
+                            product_ids, is_available=True
+                        )
+                        return products[:limit]
 
             products = self.product_repository.get_user_favorite_products(
                 user_id=user_id, limit=limit
