@@ -216,30 +216,15 @@ class ProductService:
 
     async def check_is_favorite(self, user_id: UUID, product_id: UUID) -> bool:
         try:
-            # Intentar obtener del caché de Redis primero
-            cache_key = f"{USER_FAVORITES_CACHE_PREFIX}{user_id}"
-            
-            # Verificar si el set de favoritos del usuario existe en caché
-            cached_favorites = await RedisClient.get(cache_key)
-            
-            if cached_favorites is not None:
-                # Si existe en caché, verificar si product_id está en el set
-                import json
-                favorites_set = set(json.loads(cached_favorites))
-                return str(product_id) in favorites_set
-            
-            # Si no está en caché, cargar todos los favoritos del usuario
-            all_favorites = await self.product_repository.get_user_favorites(user_id)
-            favorites_ids = [str(fav.product_id) for fav in all_favorites]
-            
-            # Guardar en caché por 15 minutos (900 segundos)
-            import json
-            await RedisClient.set(cache_key, json.dumps(favorites_ids), ex=900)
-            
-            # Verificar si el producto está en favoritos
-            return str(product_id) in favorites_ids
+            # Usar directamente el repositorio para evitar problemas de cache
+            return await self.product_repository.check_is_favorite(user_id, product_id)
             
         except HTTPException:
+            raise
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            CoffeeAppHttpResponse.internal_error()
             raise
         except Exception as e:
             import traceback
