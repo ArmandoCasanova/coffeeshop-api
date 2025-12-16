@@ -95,7 +95,6 @@ jobs:
             
             - [ ] La rama sigue el formato: `feat/CS-##-Nombre-de-la-tarea`
             - [ ] El titulo del PR sigue el formato: `feat(CS-##): Nombre de la tarea`
-            - [ ] El PR apunta a la rama `develop`
             - [ ] Se solicito revision de alguien del equipo
             
             ### FastAPI + PostgreSQL Guidelines
@@ -131,23 +130,6 @@ jobs:
               issue_number,
               body: comment
             });
-
-      - name: Check base branch
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const baseBranch = '${{ github.event.pull_request.base.ref }}';
-            if (baseBranch !== 'develop' && baseBranch !== 'main') {
-              const { owner, repo } = context.repo;
-              const issue_number = context.issue.number;
-              
-              await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number,
-                body: '### ADVERTENCIA\n\nEl PR debe apuntar a la rama `develop`, no a `' + baseBranch + '`.'
-              });
-            }
 
       - name: Request review
         uses: actions/github-script@v7
