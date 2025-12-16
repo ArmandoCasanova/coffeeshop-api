@@ -61,68 +61,53 @@ jobs:
             
             const branchValid = '${{ steps.validate-branch.outputs.valid }}' === 'true';
             const prValid = '${{ steps.validate-pr.outputs.valid }}' === 'true';
+            const author = '${{ steps.pr-info.outputs.author }}';
             
             let warnings = '';
             if (!branchValid) {
               warnings += '\n### ADVERTENCIA: Formato de rama incorrecto\n';
-              warnings += 'La rama debe seguir el formato: `feat/CS-##-Nombre-de-la-tarea`\n';
-              warnings += 'Ejemplo: `feat/CS-101-agregar-endpoint-usuarios`\n\n';
+              warnings += 'La rama debe seguir el formato: \`feat/CS-##-Nombre-de-la-tarea\`\n';
+              warnings += 'Ejemplo: \`feat/CS-101-agregar-endpoint-usuarios\`\n\n';
             }
             if (!prValid) {
               warnings += '### ADVERTENCIA: Formato de titulo de PR incorrecto\n';
-              warnings += 'El titulo debe seguir el formato: `feat(CS-##): Nombre de la tarea`\n';
-              warnings += 'Ejemplo: `feat(CS-101): Agregar endpoint de usuarios`\n\n';
+              warnings += 'El titulo debe seguir el formato: \`feat(CS-##): Nombre de la tarea\`\n';
+              warnings += 'Ejemplo: \`feat(CS-101): Agregar endpoint de usuarios\`\n\n';
             }
             
-            const comment = `## Hola @${{ steps.pr-info.outputs.author }}!
-
-            Gracias por contribuir a **CoffeeApp API**.
-            ${warnings}
-
-            ### Backend Checklist
-
-            Antes de hacer merge, verifica:
-            
-            - [ ] Los tests pasan (\`pytest\`)
-            - [ ] No hay errores de linting (\`ruff check\`)
-            - [ ] Las migraciones de base de datos están correctas
-            - [ ] Los endpoints están documentados (docstrings)
-            - [ ] Se actualizó el README si es necesario
-            - [ ] Las variables de entorno están documentadas
-            - [ ] Se validaron los permisos y autenticacion
-            
-            ### Consideraciones Tecnicas
-            
-            - [ ] La rama sigue el formato: `feat/CS-##-Nombre-de-la-tarea`
-            - [ ] El titulo del PR sigue el formato: `feat(CS-##): Nombre de la tarea`
-            - [ ] Se solicito revision de alguien del equipo
-            
-            ### FastAPI + PostgreSQL Guidelines
-            
-            - Usa Pydantic models para validación
-            - Implementa manejo de errores apropiado
-            - Documenta los endpoints con OpenAPI
-            - Mantén la consistencia en los códigos de respuesta
-            - Usa transacciones de DB cuando sea necesario
-            - Valida los datos de entrada correctamente
-            
-            ### Seguridad
-            
-            - [ ] No se expone información sensible en logs
-            - [ ] Las contraseñas están hasheadas
-            - [ ] Los tokens JWT están validados
-            - [ ] Los endpoints tienen la autenticacion correcta
-            
-            ### Archivos modificados
-            
-            \`\`\`
-            ${{ steps.check-files.outputs.files }}
-            \`\`\`
-            
-            ### Proximos Pasos
-            
-            Un miembro del equipo revisara tu PR. Gracias por mejorar CoffeeApp!
-            `;
+            let comment = '## Hola @' + author + '!\n\n';
+            comment += 'Gracias por contribuir a **CoffeeApp API**.\n';
+            comment += warnings;
+            comment += '\n### Backend Checklist\n\n';
+            comment += 'Antes de hacer merge, verifica:\n\n';
+            comment += '- [ ] Los tests pasan (`pytest`)\n';
+            comment += '- [ ] No hay errores de linting (`ruff check`)\n';
+            comment += '- [ ] Las migraciones de base de datos estan correctas\n';
+            comment += '- [ ] Los endpoints estan documentados (docstrings)\n';
+            comment += '- [ ] Se actualizo el README si es necesario\n';
+            comment += '- [ ] Las variables de entorno estan documentadas\n';
+            comment += '- [ ] Se validaron los permisos y autenticacion\n\n';
+            comment += '### Consideraciones Tecnicas\n\n';
+            comment += '- [ ] La rama sigue el formato: `feat/CS-##-Nombre-de-la-tarea`\n';
+            comment += '- [ ] El titulo del PR sigue el formato: `feat(CS-##): Nombre de la tarea`\n';
+            comment += '- [ ] Se solicito revision de alguien del equipo\n\n';
+            comment += '### FastAPI + PostgreSQL Guidelines\n\n';
+            comment += '- Usa Pydantic models para validacion\n';
+            comment += '- Implementa manejo de errores apropiado\n';
+            comment += '- Documenta los endpoints con OpenAPI\n';
+            comment += '- Manten la consistencia en los codigos de respuesta\n';
+            comment += '- Usa transacciones de DB cuando sea necesario\n';
+            comment += '- Valida los datos de entrada correctamente\n\n';
+            comment += '### Seguridad\n\n';
+            comment += '- [ ] No se expone informacion sensible en logs\n';
+            comment += '- [ ] Las contrasenas estan hasheadas\n';
+            comment += '- [ ] Los tokens JWT estan validados\n';
+            comment += '- [ ] Los endpoints tienen la autenticacion correcta\n\n';
+            comment += '### Archivos modificados\n\n```\n';
+            comment += '${{ steps.check-files.outputs.files }}';
+            comment += '\n```\n\n';
+            comment += '### Proximos Pasos\n\n';
+            comment += 'Un miembro del equipo revisara tu PR. Gracias por mejorar CoffeeApp!';
             
             await github.rest.issues.createComment({
               owner,
