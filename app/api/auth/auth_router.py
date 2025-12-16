@@ -21,6 +21,7 @@ async def signup(data: SignupSchema, background_tasks: BackgroundTasks, session:
         raise
     except Exception:
         CoffeeAppHttpResponse.internal_error()
+        
 
 
 @router.post("/signin", response_model=AuthResponseSchema)
