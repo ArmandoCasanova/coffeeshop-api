@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Validate branch name
         id: validate-branch
@@ -47,13 +49,16 @@ jobs:
       - name: Check for Python files
         id: check-files
         run: |
-          FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+          FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD)
           echo "files<<EOF" >> $GITHUB_OUTPUT
           echo "$FILES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Add welcome comment
         uses: actions/github-script@v7
+        env:
+          FILES_CHANGED: ${{ steps.check-files.outputs.files }}
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -62,17 +67,18 @@ jobs:
             const branchValid = '${{ steps.validate-branch.outputs.valid }}' === 'true';
             const prValid = '${{ steps.validate-pr.outputs.valid }}' === 'true';
             const author = '${{ steps.pr-info.outputs.author }}';
+            const filesChanged = process.env.FILES_CHANGED || 'No files detected';
             
             let warnings = '';
             if (!branchValid) {
               warnings += '\n### ADVERTENCIA: Formato de rama incorrecto\n';
-              warnings += 'La rama debe seguir el formato: \`feat/CS-##-Nombre-de-la-tarea\`\n';
-              warnings += 'Ejemplo: \`feat/CS-101-agregar-endpoint-usuarios\`\n\n';
+              warnings += 'La rama debe seguir el formato: `feat/CS-##-Nombre-de-la-tarea`\n';
+              warnings += 'Ejemplo: `feat/CS-101-agregar-endpoint-usuarios`\n\n';
             }
             if (!prValid) {
               warnings += '### ADVERTENCIA: Formato de titulo de PR incorrecto\n';
-              warnings += 'El titulo debe seguir el formato: \`feat(CS-##): Nombre de la tarea\`\n';
-              warnings += 'Ejemplo: \`feat(CS-101): Agregar endpoint de usuarios\`\n\n';
+              warnings += 'El titulo debe seguir el formato: `feat(CS-##): Nombre de la tarea`\n';
+              warnings += 'Ejemplo: `feat(CS-101): Agregar endpoint de usuarios`\n\n';
             }
             
             let comment = '## Hola @' + author + '!\n\n';
@@ -104,7 +110,7 @@ jobs:
             comment += '- [ ] Los tokens JWT estan validados\n';
             comment += '- [ ] Los endpoints tienen la autenticacion correcta\n\n';
             comment += '### Archivos modificados\n\n```\n';
-            comment += '${{ steps.check-files.outputs.files }}';
+            comment += filesChanged;
             comment += '\n```\n\n';
             comment += '### Proximos Pasos\n\n';
             comment += 'Un miembro del equipo revisara tu PR. Gracias por mejorar CoffeeApp!';
@@ -136,16 +142,19 @@ jobs:
 
       - name: Add labels
         uses: actions/github-script@v7
+        env:
+          PR_TITLE: ${{ steps.pr-info.outputs.title }}
+          FILES_CHANGED: ${{ steps.check-files.outputs.files }}
         with:
           script: |
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
-            const title = '${{ steps.pr-info.outputs.title }}'.toLowerCase();
-            const files = `${{ steps.check-files.outputs.files }}`.toLowerCase();
+            const title = (process.env.PR_TITLE || '').toLowerCase();
+            const files = (process.env.FILES_CHANGED || '').toLowerCase();
             
             let labels = ['api'];
             
-            // Auto-label basado en título
+            // Auto-label basado en titulo
             if (title.includes('fix') || title.includes('bug')) labels.push('bug');
             if (title.includes('feat') || title.includes('feature')) labels.push('enhancement');
             if (title.includes('docs')) labels.push('documentation');
