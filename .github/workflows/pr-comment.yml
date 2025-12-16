@@ -1,0 +1,137 @@
+name: API PR Comment and Review
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get PR info
+        id: pr-info
+        run: |
+          echo "author=${{ github.event.pull_request.user.login }}" >> $GITHUB_OUTPUT
+          echo "title=${{ github.event.pull_request.title }}" >> $GITHUB_OUTPUT
+          echo "number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+
+      - name: Check for Python files
+        id: check-files
+        run: |
+          FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Add welcome comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            
+            const comment = `## Hola @${{ steps.pr-info.outputs.author }}!
+
+            Gracias por contribuir a **CoffeeApp API**.
+
+            ### Backend Checklist
+
+            Antes de hacer merge, verifica:
+            
+            - [ ] Los tests pasan (\`pytest\`)
+            - [ ] No hay errores de linting (\`ruff check\`)
+            - [ ] Las migraciones de base de datos están correctas
+            - [ ] Los endpoints están documentados (docstrings)
+            - [ ] Se actualizó el README si es necesario
+            - [ ] Las variables de entorno están documentadas
+            - [ ] Se validaron los permisos y autenticacion
+            
+            ### FastAPI + PostgreSQL Guidelines
+            
+            - Usa Pydantic models para validación
+            - Implementa manejo de errores apropiado
+            - Documenta los endpoints con OpenAPI
+            - Mantén la consistencia en los códigos de respuesta
+            - Usa transacciones de DB cuando sea necesario
+            - Valida los datos de entrada correctamente
+            
+            ### Seguridad
+            
+            - [ ] No se expone información sensible en logs
+            - [ ] Las contraseñas están hasheadas
+            - [ ] Los tokens JWT están validados
+            - [ ] Los endpoints tienen la autenticacion correcta
+            
+            ### Archivos modificados
+            
+            \`\`\`
+            ${{ steps.check-files.outputs.files }}
+            \`\`\`
+            
+            ### Proximos Pasos
+            
+            Un miembro del equipo revisara tu PR. Gracias por mejorar CoffeeApp!
+            `;
+            
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body: comment
+            });
+
+      - name: Request review
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pull_number = context.issue.number;
+            
+            try {
+              await github.rest.pulls.requestReviewers({
+                owner,
+                repo,
+                pull_number,
+                reviewers: ['ArmandoCasanova']
+              });
+            } catch (error) {
+              console.log('Could not request reviewers:', error.message);
+            }
+
+      - name: Add labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const title = '${{ steps.pr-info.outputs.title }}'.toLowerCase();
+            const files = `${{ steps.check-files.outputs.files }}`.toLowerCase();
+            
+            let labels = ['api'];
+            
+            // Auto-label basado en título
+            if (title.includes('fix') || title.includes('bug')) labels.push('bug');
+            if (title.includes('feat') || title.includes('feature')) labels.push('enhancement');
+            if (title.includes('docs')) labels.push('documentation');
+            if (title.includes('security')) labels.push('security');
+            if (title.includes('performance')) labels.push('performance');
+            
+            // Auto-label basado en archivos modificados
+            if (files.includes('migration')) labels.push('database');
+            if (files.includes('auth')) labels.push('authentication');
+            if (files.includes('payment')) labels.push('payments');
+            if (files.includes('test')) labels.push('tests');
+            
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number,
+              labels
+            });

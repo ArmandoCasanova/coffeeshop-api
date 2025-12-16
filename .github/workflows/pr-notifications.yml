@@ -1,0 +1,100 @@
+name: API PR Notifications
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, review_requested]
+  pull_request_review:
+    types: [submitted]
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Get PR details
+        id: pr-details
+        run: |
+          echo "author=${{ github.event.pull_request.user.login }}" >> $GITHUB_OUTPUT
+          echo "title=${{ github.event.pull_request.title }}" >> $GITHUB_OUTPUT
+          echo "url=${{ github.event.pull_request.html_url }}" >> $GITHUB_OUTPUT
+          echo "number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+
+      - name: Send email notification for new PR
+        if: github.event.action == 'opened' || github.event.action == 'ready_for_review'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Nuevo PR en CoffeeApp API: ${{ steps.pr-details.outputs.title }}"
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          from: CoffeeApp API Bot
+          html_body: |
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: #5E483C; color: white; padding: 20px; border-radius: 5px 5px 0 0; }
+                .content { background: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
+                .footer { background: #F6F2E7; padding: 15px; text-align: center; border-radius: 0 0 5px 5px; }
+                .button { display: inline-block; padding: 10px 20px; background: #5E483C; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; }
+                .info { background: white; padding: 15px; margin: 10px 0; border-left: 4px solid #5E483C; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h2>CoffeeApp API - Nuevo Pull Request</h2>
+                </div>
+                <div class="content">
+                  <p>Hola equipo,</p>
+                  <p>Se ha abierto un nuevo Pull Request que requiere revisión:</p>
+                  
+                  <div class="info">
+                    <p><strong>Autor:</strong> ${{ steps.pr-details.outputs.author }}</p>
+                    <p><strong>Titulo:</strong> ${{ steps.pr-details.outputs.title }}</p>
+                    <p><strong>Numero:</strong> #${{ steps.pr-details.outputs.number }}</p>
+                  </div>
+                  
+                  <p>Por favor, revisa el código y proporciona feedback constructivo.</p>
+                  
+                  <a href="${{ steps.pr-details.outputs.url }}" class="button">Ver Pull Request</a>
+                </div>
+                <div class="footer">
+                  <p>CoffeeApp API Bot</p>
+                </div>
+              </div>
+            </body>
+            </html>
+
+      - name: Send review notification
+        if: github.event.action == 'submitted'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Review recibido - PR #${{ steps.pr-details.outputs.number }}"
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          from: CoffeeApp API Bot
+          body: |
+            Hola,
+
+            Se ha enviado una revision en el PR #${{ steps.pr-details.outputs.number }} de CoffeeApp API.
+
+            Reviewer: ${{ github.event.review.user.login }}
+            Estado: ${{ github.event.review.state }}
+            Comentario: ${{ github.event.review.body }}
+            
+            Ver PR: ${{ steps.pr-details.outputs.url }}
+
+            Revisa los comentarios y responde cuando sea necesario.
+
+            Saludos,
+            CoffeeApp API Bot
