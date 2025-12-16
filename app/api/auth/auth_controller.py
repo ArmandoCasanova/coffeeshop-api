@@ -127,6 +127,7 @@ class AuthController:
             CoffeeAppHttpResponse.internal_error()
             
             
+            
     
     async def get_current_user(self, email: str) -> UserModel:
         try:            
