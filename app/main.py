@@ -3,6 +3,9 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
+# 💡 1. AÑADE ESTA IMPORTACIÓN
+from fastapi.staticfiles import StaticFiles
+
 # Routers
 from app.api.auth.auth_router import router as auth_router
 from app.api.categories.category_router import router as category_router
@@ -47,6 +50,11 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1}/openapi.json",
     lifespan=lifespan,
 )
+
+# 💡 2. AÑADE ESTA LÍNEA (JUSTO AQUÍ)
+# Esto le dice a FastAPI que sirva la carpeta 'static'
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 
 # Middleware CORS
