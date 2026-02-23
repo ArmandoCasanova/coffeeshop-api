@@ -1,0 +1,66 @@
+services:
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+      - ./images_data:/app/static/images/categories
+    container_name: coffeeapp-fastapi-app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - coffeeshop_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  postgres:
+    image: postgres:alpine
+    container_name: coffeeapp-postgres-container
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    networks:
+      - coffeeshop_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    container_name: coffeeapp-redis-container
+    ports:
+      - "6379:6379"
+    networks:
+      - coffeeshop_network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: coffeeapp_pgadmin4_container
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+      PGADMIN_LISTEN_PORT: 8001
+    ports:
+      - "8001:8001"
+    networks:
+      - coffeeshop_network
+    depends_on:
+      - postgres
+
+networks:
+  coffeeshop_network:
+    driver: bridge

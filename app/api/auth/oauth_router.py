@@ -21,6 +21,12 @@ from app.utils.security import get_user_token
 
 
 router = APIRouter(prefix="/auth/oauth", tags=["OAuth"])
+
+STATE_KEY_PREFIX = "oauth_state:"
+STATE_EXPIRY = 600  # 10 minutes
+
+
+@router.post("/start")
 async def start_oauth_flow(
     provider: str,
     request: Request,
