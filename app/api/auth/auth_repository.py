@@ -205,3 +205,20 @@ class AuthRepository:
                 self.session.commit()
         except Exception:
             CoffeeAppHttpResponse.internal_error()
+
+    async def update_user(self, user_id: UUID, update_data: dict) -> UserModel | None:
+        try:
+            statement = select(UserModel).where(UserModel.user_id == user_id)
+            user = self.session.exec(statement).first()
+            if user:
+                for key, value in update_data.items():
+                    if hasattr(user, key):
+                        setattr(user, key, value)
+                user.updated_at = datetime.now(timezone.utc)
+                self.session.add(user)
+                self.session.commit()
+                self.session.refresh(user)
+                return user
+            return None
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()

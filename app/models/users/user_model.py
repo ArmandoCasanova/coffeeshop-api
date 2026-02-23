@@ -27,6 +27,12 @@ class UserModel(BaseCoffeeAppModel, table=True):
     password: str
     points: float = Field(default=0.0)
     is_verified: bool = Field(default=False)
+    
+    # OAuth Fields
+    oauth_provider: Optional[str] = Field(default=None, index=True)  # google, github, etc.
+    oauth_provider_id: Optional[str] = Field(default=None, index=True)  # ID externo del proveedor
+    oauth_email_verified: bool = Field(default=False)  # Si el email fue verificado por el proveedor OAuth
+    picture_url: Optional[str] = Field(default=None)  # URL de la foto de perfil
 
     qr_codes: List["UserQRCodeModel"] = Relationship(back_populates="user")
     verification_codes: List["VerificationCodeModel"] = Relationship(back_populates="user")
