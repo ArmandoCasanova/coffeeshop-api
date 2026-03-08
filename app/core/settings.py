@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     # Session Configuration
     SESSION_TIMEOUT: int = 86400  # 24 horas en segundos
 
+    # Rate limiting 
+    RATE_LIMIT_REQUESTS: int = 10
+    RATE_LIMIT_WINDOW_SECONDS: int = 60
+
 
 def get_settings():
     return Settings()
