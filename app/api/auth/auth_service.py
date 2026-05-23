@@ -152,6 +152,7 @@ class AuthService:
         try:
             code = await self.auth_repository.generate_unique_verification_code(is_password_reset=False)
             verification_code = await self.auth_repository.create_verification_code(code, user_id)
+            
             return verification_code
         except HTTPException:
             raise
@@ -163,9 +164,9 @@ class AuthService:
         Generar (o actualizar) código de reset de contraseña para un usuario
         """
         try:            
+            
             code = await self.auth_repository.generate_unique_verification_code(is_password_reset=True)
-            reset_code = await self.auth_repository.create_password_reset_code(code, user_id)          
-
+            reset_code = await self.auth_repository.create_password_reset_code(code, user_id)                      
             return reset_code
 
         except HTTPException:
@@ -180,15 +181,18 @@ class AuthService:
         Aplica validaciones de negocio: existe, está activo
         """
         try:
+
             verification_code = await self.auth_repository.get_verification_code(code)
             
             if not verification_code:
+  
                 CoffeeAppHttpResponse.unauthorized_with_code(
                     error_id=CoffeeAppResponseCodes.INVALID_CODE.code,
                     message=CoffeeAppResponseCodes.INVALID_CODE.detail,
                 )
             
             if not verification_code.is_alive:
+              
                 CoffeeAppHttpResponse.bad_request(
                     data={
                         "message": CoffeeAppResponseCodes.ALREADY_USED_CODE.detail,
@@ -197,18 +201,40 @@ class AuthService:
                     error_id=CoffeeAppResponseCodes.ALREADY_USED_CODE.code,
                     message=CoffeeAppResponseCodes.ALREADY_USED_CODE.detail,
                 )
+                
+            now_utc = datetime.now(timezone.utc)
+            
+            if verification_code.expires_at.tzinfo is None:
+                expires_at_aware = verification_code.expires_at.replace(tzinfo=timezone.utc)
+            else:
+                expires_at_aware = verification_code.expires_at
+
+            if expires_at_aware < now_utc:
+              
+                await self.auth_repository.update_verification_code_status(
+                    verification_code,
+                    is_alive=False,
+                )
+                CoffeeAppHttpResponse.bad_request(
+                    data={
+                        "message": CoffeeAppResponseCodes.EXPIRED_CODE.detail,
+                        "providedValue": {"code": verification_code.code},
+                    },
+                    error_id=CoffeeAppResponseCodes.EXPIRED_CODE.code,
+                    message=CoffeeAppResponseCodes.EXPIRED_CODE.detail,
+                )
             
             return verification_code
         except HTTPException:
             raise
-        except Exception:
-            CoffeeAppHttpResponse.internal_error()
+       
 
     async def get_and_validate_password_reset_code(self, code: str) -> VerificationCodePasswordResetModel:
         """
         Obtener y validar código de reset de contraseña
         """
         try:
+
             reset_code = await self.auth_repository.get_password_reset_code(code)
             
             if not reset_code:
@@ -226,6 +252,28 @@ class AuthService:
                     error_id=CoffeeAppResponseCodes.ALREADY_USED_CODE.code,
                     message=CoffeeAppResponseCodes.ALREADY_USED_CODE.detail,
                 )
+
+            now_utc = datetime.now(timezone.utc)
+            
+            if reset_code.is_alive.expires_at.tzinfo is None:
+                expires_at_aware = reset_code.is_alive.expires_at.replace(tzinfo=timezone.utc)
+            else:
+                expires_at_aware = reset_code.is_alive.expires_at
+
+            if expires_at_aware < now_utc:
+            
+                await self.auth_repository.update_verification_code_status(
+                    reset_code,
+                    is_alive=False,
+                )
+                CoffeeAppHttpResponse.bad_request(
+                    data={
+                        "message": CoffeeAppResponseCodes.EXPIRED_CODE.detail,
+                        "providedValue": {"code": reset_code.code},
+                    },
+                    error_id=CoffeeAppResponseCodes.EXPIRED_CODE.code,
+                    message=CoffeeAppResponseCodes.EXPIRED_CODE.detail,
+                )
             
             return reset_code
         except HTTPException:
@@ -238,7 +286,7 @@ class AuthService:
         Verificar usuario usando código de verificación
         Proceso completo: validar código, marcar como usado, verificar usuario
         """
-        try:
+        try:            
             # Validar y obtener código
             verification_code = await self.get_and_validate_verification_code(code)
             
@@ -246,7 +294,7 @@ class AuthService:
             await self.auth_repository.update_verification_code_status(verification_code, is_alive=False)
             
             # Verificar usuario
-            await self.auth_repository.update_user_verification(verification_code.user_id, True)
+            await self.auth_repository.update_user_verification(verification_code.user_id, True)            
             
             return {"message": "User verified successfully"}
         except HTTPException:
@@ -259,7 +307,7 @@ class AuthService:
         Validar código de reset de contraseña y retornar user_id
         Marca el código como usado
         """
-        try:
+        try:            
             # Validar y obtener código
             reset_code = await self.get_and_validate_password_reset_code(code)
             
@@ -277,7 +325,7 @@ class AuthService:
         Reenviar código de verificación a un usuario
         Genera nuevo código y envía por email
         """
-        try:
+        try:            
             # Verificar que el usuario existe
             user = await self.auth_repository.get_user_by_email(email)
             if not user:
@@ -330,7 +378,7 @@ class AuthService:
         Verificar usuario usando código de verificación
         Proceso completo: validar código, marcar como usado, verificar usuario
         """
-        try:
+        try:            
             # Validar y obtener código
             verification_code = await self.get_and_validate_password_reset_code(code)
             
@@ -349,16 +397,16 @@ class AuthService:
         Obtener y validar código de verificación
         Aplica validaciones de negocio: existe, está activo
         """
-        try:
+        try:            
             password_reset_code = await self.auth_repository.get_password_reset_code(code)
             
-            if not password_reset_code:
+            if not password_reset_code:                
                 CoffeeAppHttpResponse.unauthorized_with_code(
                     error_id=CoffeeAppResponseCodes.INVALID_CODE.code,
                     message=CoffeeAppResponseCodes.INVALID_CODE.detail,
                 )
             
-            if not password_reset_code.is_alive:
+            if not password_reset_code.is_alive:                
                 CoffeeAppHttpResponse.bad_request(
                     data={
                         "message": CoffeeAppResponseCodes.ALREADY_USED_CODE.detail,
@@ -366,6 +414,28 @@ class AuthService:
                     },
                     error_id=CoffeeAppResponseCodes.ALREADY_USED_CODE.code,
                     message=CoffeeAppResponseCodes.ALREADY_USED_CODE.detail,
+                )
+
+
+            now_utc = datetime.now(timezone.utc)
+            
+            if password_reset_code.expires_at.tzinfo is None:
+                expires_at_aware = password_reset_code.expires_at.replace(tzinfo=timezone.utc)
+            else:
+                expires_at_aware = password_reset_code.expires_at
+
+            if expires_at_aware < now_utc:             
+                await self.auth_repository.update_verification_code_status(
+                    password_reset_code,
+                    is_alive=False,
+                )
+                CoffeeAppHttpResponse.bad_request(
+                    data={
+                        "message": CoffeeAppResponseCodes.EXPIRED_CODE.detail,
+                        "providedValue": {"code": password_reset_code.code},
+                    },
+                    error_id=CoffeeAppResponseCodes.EXPIRED_CODE.code,
+                    message=CoffeeAppResponseCodes.EXPIRED_CODE.detail,
                 )
             
             return password_reset_code
