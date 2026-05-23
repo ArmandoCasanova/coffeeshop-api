@@ -30,6 +30,7 @@ from app.api.points.points_router import router as points_router
 from .core.settings import settings
 from .core.redis_client import RedisClient
 from .core.exceptions import CoffeeShopException, exception_to_http_exception
+from .core.rate_limit import RateLimitMiddleware
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -74,7 +75,7 @@ app.add_middleware(
     expose_headers=["Content-Disposition"]
 )
 
-# 3. Compresión GZIP
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
