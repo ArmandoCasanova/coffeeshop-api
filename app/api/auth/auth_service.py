@@ -145,12 +145,17 @@ class AuthService:
 
     # ==================== VERIFICATION CODE METHODS ====================
 
-    async def generate_and_create_verification_code(self, user_id: UUID) -> VerificationCodeModel:
+    async def generate_and_create_verification_code(
+        self, user_id: UUID, email: str = None
+    ) -> VerificationCodeModel:
         """
-        Generar y crear código de verificación único para un usuario
+        Generar y crear código de verificación único para un usuario.
+        Si se pasa email y coincide con E2E_TEST_EMAIL, se usará el código fijo de testing.
         """
         try:
-            code = await self.auth_repository.generate_unique_verification_code(is_password_reset=False)
+            code = await self.auth_repository.generate_unique_verification_code(
+                is_password_reset=False, email=email
+            )
             verification_code = await self.auth_repository.create_verification_code(code, user_id)
             return verification_code
         except HTTPException:

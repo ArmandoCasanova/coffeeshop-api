@@ -34,6 +34,23 @@ class Settings(BaseSettings):
     STRIPE_SECRET_KEY: str
     STRIPE_PUBLISHABLE_KEY: str
 
+    # OAuth Configuration - Google
+    GOOGLE_OAUTH_CLIENT_ID: str = ""
+    GOOGLE_OAUTH_CLIENT_SECRET: str = ""
+    GOOGLE_OAUTH_REDIRECT_URI: str = ""
+
+    # OAuth Configuration - GitHub
+    GITHUB_OAUTH_CLIENT_ID: str = ""
+    GITHUB_OAUTH_CLIENT_SECRET: str = ""
+    GITHUB_OAUTH_REDIRECT_URI: str = ""
+
+    # Session Configuration
+    SESSION_TIMEOUT: int = 86400  # 24 horas en segundos
+
+    # E2E Testing Configuration
+    E2E_TEST_EMAIL: str = ""
+    E2E_TEST_VERIFICATION_CODE: str = "0000"
+
 
 def get_settings():
     return Settings()

@@ -37,7 +37,9 @@ class AuthController:
                 # Continuar con el signup aunque falle Stripe
             
             # Generar y crear código de verificación
-            verification_code = await self.auth_service.generate_and_create_verification_code(user.user_id)
+            verification_code = await self.auth_service.generate_and_create_verification_code(
+                user.user_id, email=user.email
+            )
             
             # Enviar email con código de verificación EN BACKGROUND (no bloqueante)
             background_tasks.add_task(
