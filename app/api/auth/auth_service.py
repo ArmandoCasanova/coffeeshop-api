@@ -145,12 +145,17 @@ class AuthService:
 
     # ==================== VERIFICATION CODE METHODS ====================
 
-    async def generate_and_create_verification_code(self, user_id: UUID) -> VerificationCodeModel:
+    async def generate_and_create_verification_code(
+        self, user_id: UUID, email: str = None
+    ) -> VerificationCodeModel:
         """
-        Generar y crear código de verificación único para un usuario
+        Generar y crear código de verificación único para un usuario.
+        Si se pasa email y coincide con E2E_TEST_EMAIL, se usará el código fijo de testing.
         """
         try:
-            code = await self.auth_repository.generate_unique_verification_code(is_password_reset=False)
+            code = await self.auth_repository.generate_unique_verification_code(
+                is_password_reset=False, email=email
+            )
             verification_code = await self.auth_repository.create_verification_code(code, user_id)
             
             return verification_code
@@ -159,14 +164,19 @@ class AuthService:
         except Exception:
             CoffeeAppHttpResponse.internal_error()
 
-    async def generate_and_create_password_reset_code(self, user_id: UUID) -> VerificationCodePasswordResetModel:
+    async def generate_and_create_password_reset_code(
+        self, user_id: UUID, email: str = None
+    ) -> VerificationCodePasswordResetModel:
         """
-        Generar (o actualizar) código de reset de contraseña para un usuario
+        Generar (o actualizar) código de reset de contraseña para un usuario.
+        Si se pasa email y coincide con E2E_TEST_EMAIL, se usará el código fijo de testing.
         """
         try:            
-            
-            code = await self.auth_repository.generate_unique_verification_code(is_password_reset=True)
-            reset_code = await self.auth_repository.create_password_reset_code(code, user_id)                      
+
+            code = await self.auth_repository.generate_unique_verification_code(
+                is_password_reset=True, email=email
+            )
+            reset_code = await self.auth_repository.create_password_reset_code(code, user_id)          
             return reset_code
 
         except HTTPException:

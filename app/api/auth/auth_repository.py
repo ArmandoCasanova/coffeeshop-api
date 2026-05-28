@@ -4,13 +4,14 @@ from sqlmodel import Session, select
 from fastapi import HTTPException
 from pydantic import EmailStr
 from random import randint
-from typing import Union
+from typing import Union, Optional
 
 from app.models.users.user_model import UserModel
 from app.models.users.verification_code_model import VerificationCodeModel
 from app.models.users.verification_code_password_reset_model import VerificationCodePasswordResetModel
 from app.utils.security import get_password_hash
 from app.core.http_response import CoffeeAppHttpResponse
+from app.core.settings import settings
 
 
 class AuthRepository:
@@ -88,16 +89,31 @@ class AuthRepository:
 
     # ==================== VERIFICATION CODE METHODS ====================
     
-    async def generate_unique_verification_code(self, is_password_reset: bool = False) -> str:
+    async def generate_unique_verification_code(
+        self,
+        is_password_reset: bool = False,
+        email: Optional[str] = None,
+    ) -> str:
         """
-        Generar código único de 4 dígitos
+        Generar código único de 4 dígitos.
+        Si el email coincide con E2E_TEST_EMAIL (variable de entorno),
+        retorna E2E_TEST_VERIFICATION_CODE directamente para facilitar tests E2E.
         Args:
             is_password_reset: Si True, verifica en tabla de password reset, si False en verification codes
+            email: Email del usuario (opcional). Si coincide con E2E_TEST_EMAIL, retorna código fijo.
         """
         try:
+            # --- E2E Testing bypass ---
+            if (
+                settings.E2E_TEST_EMAIL
+                and email
+                and email.lower() == settings.E2E_TEST_EMAIL.lower()
+            ):
+                return settings.E2E_TEST_VERIFICATION_CODE
+            # --------------------------
+
             model = VerificationCodePasswordResetModel if is_password_reset else VerificationCodeModel
         
-            
             while True:
                 code_digits = [randint(0, 9) for _ in range(4)]
                 code = "".join(map(str, code_digits))
