@@ -163,12 +163,17 @@ class AuthService:
         except Exception:
             CoffeeAppHttpResponse.internal_error()
 
-    async def generate_and_create_password_reset_code(self, user_id: UUID) -> VerificationCodePasswordResetModel:
+    async def generate_and_create_password_reset_code(
+        self, user_id: UUID, email: str = None
+    ) -> VerificationCodePasswordResetModel:
         """
-        Generar (o actualizar) código de reset de contraseña para un usuario
+        Generar (o actualizar) código de reset de contraseña para un usuario.
+        Si se pasa email y coincide con E2E_TEST_EMAIL, se usará el código fijo de testing.
         """
         try:            
-            code = await self.auth_repository.generate_unique_verification_code(is_password_reset=True)
+            code = await self.auth_repository.generate_unique_verification_code(
+                is_password_reset=True, email=email
+            )
             reset_code = await self.auth_repository.create_password_reset_code(code, user_id)          
 
             return reset_code
