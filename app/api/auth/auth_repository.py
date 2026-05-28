@@ -121,14 +121,14 @@ class AuthRepository:
                 statement = select(model).where(model.code == code)
                 existing_code = self.session.exec(statement).first()
                 
-                if not existing_code:
+                if not existing_code:                    
                     return code
         except Exception:
             CoffeeAppHttpResponse.internal_error()
 
     async def create_verification_code(self, code: str, user_id: UUID) -> VerificationCodeModel:
         """Crear nuevo código de verificación"""
-        try:
+        try:            
             new_code = VerificationCodeModel(code=code, user_id=user_id)
             self.session.add(new_code)
             self.session.commit()
@@ -142,20 +142,24 @@ class AuthRepository:
         Crear o actualizar código de reset de contraseña para un usuario.
         Si ya existe un registro previo, se actualiza con un nuevo código.
         """
-        try:            
+        try:
+            
             statement = select(VerificationCodePasswordResetModel).where(
                 VerificationCodePasswordResetModel.user_id == user_id
             )
             existing_code = self.session.exec(statement).first()
 
-            if existing_code:                
+            if existing_code:
+               
                 existing_code.code = code
                 existing_code.is_alive = True
+                existing_code.expires_at = datetime.now(timezone.utc) + timedelta(minutes=2)
                 existing_code.updated_at = datetime.now(timezone.utc)
                 self.session.add(existing_code)
                 self.session.commit()
                 self.session.refresh(existing_code)
                 return existing_code
+            
             
             new_code = VerificationCodePasswordResetModel(
                 code=code,
@@ -165,7 +169,8 @@ class AuthRepository:
             )
             self.session.add(new_code)
             self.session.commit()
-            self.session.refresh(new_code)            
+            self.session.refresh(new_code)
+            
             return new_code
 
         except Exception as e:            
@@ -174,18 +179,24 @@ class AuthRepository:
     async def get_verification_code(self, code: str) -> VerificationCodeModel | None:
         """Obtener código de verificación por código"""
         try:
+            
             statement = select(VerificationCodeModel).where(VerificationCodeModel.code == code)
-            return self.session.exec(statement).first()
+            result = self.session.exec(statement).first()
+            
+            return result
         except Exception:
             CoffeeAppHttpResponse.internal_error()
 
     async def get_password_reset_code(self, code: str) -> VerificationCodePasswordResetModel | None:
         """Obtener código de reset de contraseña por código"""
         try:
+            
             statement = select(VerificationCodePasswordResetModel).where(
                 VerificationCodePasswordResetModel.code == code
             )
-            return self.session.exec(statement).first()
+            result = self.session.exec(statement).first()
+            
+            return result
         except Exception:
             CoffeeAppHttpResponse.internal_error()
 
@@ -196,6 +207,7 @@ class AuthRepository:
     ) -> None:
         """Actualizar estado del código de verificación"""
         try:
+           
             verification_code.is_alive = is_alive
             self.session.add(verification_code)
             self.session.commit()
@@ -220,5 +232,22 @@ class AuthRepository:
                 user.updated_at = datetime.now(timezone.utc)
                 self.session.add(user)
                 self.session.commit()
+        except Exception:
+            CoffeeAppHttpResponse.internal_error()
+
+    async def update_user(self, user_id: UUID, update_data: dict) -> UserModel | None:
+        try:
+            statement = select(UserModel).where(UserModel.user_id == user_id)
+            user = self.session.exec(statement).first()
+            if user:
+                for key, value in update_data.items():
+                    if hasattr(user, key):
+                        setattr(user, key, value)
+                user.updated_at = datetime.now(timezone.utc)
+                self.session.add(user)
+                self.session.commit()
+                self.session.refresh(user)
+                return user
+            return None
         except Exception:
             CoffeeAppHttpResponse.internal_error()

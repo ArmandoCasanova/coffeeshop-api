@@ -51,6 +51,11 @@ class Settings(BaseSettings):
     E2E_TEST_EMAIL: str = ""
     E2E_TEST_VERIFICATION_CODE: str = "0000"
 
+    # Rate limiting 
+    RATE_LIMIT_REQUESTS: int = 10
+    RATE_LIMIT_WINDOW_SECONDS: int = 60
+
+
 
 def get_settings():
     return Settings()

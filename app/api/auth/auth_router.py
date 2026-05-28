@@ -41,7 +41,7 @@ async def verify_user_verification_code(
     session: Session = Depends(get_db)
 ):
     """Verificar código de verificación del usuario"""
-    try:
+    try:        
         controller = AuthController(session)
         return await controller.verify_verification_code(request.code)
     except HTTPException:

@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 from fastapi.responses import JSONResponse, Response
 from typing import Generic, TypeVar, Optional
+from datetime import datetime
 
 
 T = TypeVar("T")
@@ -19,17 +20,23 @@ class HttpResponseMessages:
     FORBIDDEN = "Forbidden"
     INTERNAL_SERVER_ERROR = "Internal server error"
     BAD_REQUEST = "Bad request"
+    UNPROCESSABLE_ENTITY = "Unprocessable entity"
+    CONFLICT = "Resource conflict"
+    RATE_LIMITED = "Too many requests"
 
 
 class HttpStatus:
     OK = 200
     CREATED = 201
     NO_CONTENT = 204
-    NOT_FOUND = 404
+    BAD_REQUEST = 400
     UNAUTHORIZED = 401
     FORBIDDEN = 403
+    NOT_FOUND = 404
+    CONFLICT = 409
+    UNPROCESSABLE_ENTITY = 422
+    RATE_LIMITED = 429
     INTERNAL_SERVER_ERROR = 500
-    BAD_REQUEST = 400
 
 
 class PaginationType(BaseModel):
@@ -45,15 +52,18 @@ class CoffeeAppResponseModel(BaseModel, Generic[T]):
     statusMessage: str
     data: Optional[T] = None
     pagination: Optional[PaginationType] = None
+    timestamp: Optional[str] = None
+    error: Optional[dict] = None
 
 
 class CoffeeAppHttpResponse(Generic[T]):
     @staticmethod
-    def ok(data: T, pagination: Optional[PaginationType] = None) -> JSONResponse:
+    def ok(data: T, pagination: Optional[PaginationType] = None, message: str = HttpResponseMessages.SUCCESS) -> JSONResponse:
         content = {
             "status": HttpStatus.OK,
-            "statusMessage": HttpResponseMessages.SUCCESS,
+            "statusMessage": message,
             "data": data,
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
         if isinstance(data, list):
@@ -65,13 +75,14 @@ class CoffeeAppHttpResponse(Generic[T]):
         )
 
     @staticmethod
-    def created(data: T) -> JSONResponse:
+    def created(data: T, message: str = HttpResponseMessages.CREATED) -> JSONResponse:
         return JSONResponse(
             status_code=HttpStatus.CREATED,
             content={
                 "status": HttpStatus.CREATED,
-                "statusMessage": HttpResponseMessages.CREATED,
+                "statusMessage": message,
                 "data": data,
+                "timestamp": datetime.utcnow().isoformat(),
             },
         )
 
@@ -80,13 +91,14 @@ class CoffeeAppHttpResponse(Generic[T]):
         return Response(status_code=HttpStatus.NO_CONTENT)
 
     @staticmethod
-    def updated(data: Optional[T] = None) -> JSONResponse:
+    def updated(data: Optional[T] = None, message: str = HttpResponseMessages.UPDATED) -> JSONResponse:
         return JSONResponse(
             status_code=HttpStatus.OK,
             content={
                 "status": HttpStatus.OK,
-                "statusMessage": HttpResponseMessages.UPDATED,
+                "statusMessage": message,
                 "data": data,
+                "timestamp": datetime.utcnow().isoformat(),
             },
         )
 
@@ -100,35 +112,36 @@ class CoffeeAppHttpResponse(Generic[T]):
                 "status": HttpStatus.NOT_FOUND,
                 "statusMessage": message or HttpResponseMessages.NOT_FOUND,
                 "error": {
-                    "code": error_id or HttpStatus.NOT_FOUND,
+                    "code": error_id or "NOT_FOUND",
                     "data": data,
                 },
+                "timestamp": datetime.utcnow().isoformat(),
             },
         )
 
     @staticmethod
-    def unauthorized() -> HTTPException:
-        # Default unauthorized without structured error code
+    def unauthorized(message: Optional[str] = None) -> HTTPException:
         raise HTTPException(
             status_code=HttpStatus.UNAUTHORIZED,
             detail={
                 "status": HttpStatus.UNAUTHORIZED,
-                "statusMessage": HttpResponseMessages.UNAUTHORIZED,
+                "statusMessage": message or HttpResponseMessages.UNAUTHORIZED,
+                "timestamp": datetime.utcnow().isoformat(),
             },
         )
 
     @staticmethod
     def unauthorized_with_code(error_id: Optional[str] = None, message: Optional[str] = None) -> HTTPException:
-        """Raise 401 with structured detail and optional error code."""
         raise HTTPException(
             status_code=HttpStatus.UNAUTHORIZED,
             detail={
                 "status": HttpStatus.UNAUTHORIZED,
                 "statusMessage": message or HttpResponseMessages.UNAUTHORIZED,
                 "error": {
-                    "code": error_id or HttpStatus.UNAUTHORIZED,
+                    "code": error_id or "UNAUTHORIZED",
                     "data": None,
                 },
+                "timestamp": datetime.utcnow().isoformat(),
             },
         )
 
@@ -142,32 +155,76 @@ class CoffeeAppHttpResponse(Generic[T]):
                 "status": HttpStatus.FORBIDDEN,
                 "statusMessage": message or HttpResponseMessages.FORBIDDEN,
                 "error": {
-                    "code": error_id or HttpStatus.FORBIDDEN,
+                    "code": error_id or "FORBIDDEN",
                     "data": data,
                 },
+                "timestamp": datetime.utcnow().isoformat(),
             },
         )
 
     @staticmethod
-    def internal_error() -> HTTPException:
+    def internal_error(message: Optional[str] = None) -> HTTPException:
         raise HTTPException(
             status_code=HttpStatus.INTERNAL_SERVER_ERROR,
             detail={
                 "status": HttpStatus.INTERNAL_SERVER_ERROR,
-                "statusMessage": HttpResponseMessages.INTERNAL_SERVER_ERROR,
+                "statusMessage": message or HttpResponseMessages.INTERNAL_SERVER_ERROR,
+                "timestamp": datetime.utcnow().isoformat(),
             },
         )
 
     @staticmethod
-    def bad_request(data: T, error_id: Optional[str] = None, message: Optional[str] = None) -> HTTPException:
+    def bad_request(data: Optional[T] = None, error_id: Optional[str] = None, message: Optional[str] = None) -> HTTPException:
         raise HTTPException(
             status_code=HttpStatus.BAD_REQUEST,
             detail={
                 "status": HttpStatus.BAD_REQUEST,
                 "statusMessage": message or HttpResponseMessages.BAD_REQUEST,
                 "error": {
-                    "code": error_id or HttpStatus.BAD_REQUEST,
+                    "code": error_id or "BAD_REQUEST",
                     "data": data,
                 },
+                "timestamp": datetime.utcnow().isoformat(),
+            },
+        )
+
+    @staticmethod
+    def conflict(data: Optional[T] = None, error_id: Optional[str] = None, message: Optional[str] = None) -> HTTPException:
+        raise HTTPException(
+            status_code=HttpStatus.CONFLICT,
+            detail={
+                "status": HttpStatus.CONFLICT,
+                "statusMessage": message or HttpResponseMessages.CONFLICT,
+                "error": {
+                    "code": error_id or "CONFLICT",
+                    "data": data,
+                },
+                "timestamp": datetime.utcnow().isoformat(),
+            },
+        )
+
+    @staticmethod
+    def unprocessable_entity(data: Optional[T] = None, error_id: Optional[str] = None, message: Optional[str] = None) -> HTTPException:
+        raise HTTPException(
+            status_code=HttpStatus.UNPROCESSABLE_ENTITY,
+            detail={
+                "status": HttpStatus.UNPROCESSABLE_ENTITY,
+                "statusMessage": message or HttpResponseMessages.UNPROCESSABLE_ENTITY,
+                "error": {
+                    "code": error_id or "UNPROCESSABLE_ENTITY",
+                    "data": data,
+                },
+                "timestamp": datetime.utcnow().isoformat(),
+            },
+        )
+
+    @staticmethod
+    def rate_limited(message: Optional[str] = None) -> HTTPException:
+        raise HTTPException(
+            status_code=HttpStatus.RATE_LIMITED,
+            detail={
+                "status": HttpStatus.RATE_LIMITED,
+                "statusMessage": message or HttpResponseMessages.RATE_LIMITED,
+                "timestamp": datetime.utcnow().isoformat(),
             },
         )

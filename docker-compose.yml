@@ -11,6 +11,11 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - coffeeshop_network
     depends_on:
       postgres:
         condition: service_healthy
@@ -26,6 +31,8 @@ services:
       POSTGRES_DB: ${DB_NAME}
     ports:
       - "5432:5432"
+    networks:
+      - coffeeshop_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
       interval: 3s
@@ -37,6 +44,8 @@ services:
     container_name: coffeeapp-redis-container
     ports:
       - "6379:6379"
+    networks:
+      - coffeeshop_network
 
   pgadmin:
     image: dpage/pgadmin4
@@ -47,5 +56,11 @@ services:
       PGADMIN_LISTEN_PORT: 8001
     ports:
       - "8001:8001"
+    networks:
+      - coffeeshop_network
     depends_on:
       - postgres
+
+networks:
+  coffeeshop_network:
+    driver: bridge
